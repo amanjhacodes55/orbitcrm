@@ -4,6 +4,8 @@ import { requireCtx } from "@/lib/context";
 import { Activity, Automation, AutomationRun, Board, Installation, Item } from "@/lib/models";
 import { Types } from "mongoose";
 import { displayValue } from "@/lib/values";
+import Orbi from "@/components/art/Orbi";
+import { Sparkles } from "@/components/art/Scenes";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Home" };
@@ -60,23 +62,35 @@ export default async function Home() {
   const newLeads = leads && leadStatus ? items.filter((i) => String(i.board) === String(leads._id) && displayValue(leadStatus as never, (i.values as Record<string, unknown>)[leadStatus.id]) === "New").length : 0;
 
   const stats = [
-    { label: "Open pipeline", value: `₹${openValue.toLocaleString("en-IN")}`, icon: TrendingUp, href: deals ? `/app/boards/${deals._id}` : "#" },
-    { label: "Won", value: `₹${won.toLocaleString("en-IN")}`, icon: Zap, href: deals ? `/app/boards/${deals._id}` : "#" },
-    { label: "New leads", value: newLeads, icon: Plus, href: leads ? `/app/boards/${leads._id}` : "#" },
-    { label: "Calls this week", value: callsWeek, icon: Phone, href: "#" },
-    { label: "Automation runs (7d)", value: runsWeek, icon: Bot, href: "/app/automations" },
+    { label: "Open pipeline", value: `₹${openValue.toLocaleString("en-IN")}`, icon: TrendingUp, tile: "bg-tile-1", href: deals ? `/app/boards/${deals._id}` : "#" },
+    { label: "Won", value: `₹${won.toLocaleString("en-IN")}`, icon: Zap, tile: "bg-tile-2", href: deals ? `/app/boards/${deals._id}` : "#" },
+    { label: "New leads", value: newLeads, icon: Plus, tile: "bg-tile-3", href: leads ? `/app/boards/${leads._id}` : "#" },
+    { label: "Calls this week", value: callsWeek, icon: Phone, tile: "bg-tile-4", href: "#" },
+    { label: "Automation runs (7d)", value: runsWeek, icon: Bot, tile: "bg-tile-1", href: "/app/automations" },
   ];
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 md:p-8">
-      <div>
-        <h1 className="text-2xl font-bold">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {ctx.user.name.split(" ")[0]}</h1>
-        <p className="text-sm text-muted">Here&apos;s what&apos;s happening in {ctx.workspace.name}.</p>
+      <div className="hero-gradient relative overflow-hidden rounded-[var(--radius)] px-6 py-6 text-white shadow-pop md:px-8">
+        <Sparkles className="pointer-events-none absolute inset-0 size-full" />
+        <div className="relative flex items-center gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-extrabold">Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {ctx.user.name.split(" ")[0]}! 👋</h1>
+            <p className="mt-1 text-white/85">{due.length ? `You have ${due.length} follow-up${due.length > 1 ? "s" : ""} due — let's close some deals.` : `Everything is on track in ${ctx.workspace.name}.`}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {leads && <Link href={`/app/boards/${leads._id}`} className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-semibold backdrop-blur hover:bg-white/30">🎯 Leads</Link>}
+              {deals && <Link href={`/app/boards/${deals._id}`} className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-semibold backdrop-blur hover:bg-white/30">💰 Pipeline</Link>}
+              <Link href="/app/inbox" className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-semibold backdrop-blur hover:bg-white/30">💬 Inbox</Link>
+              <Link href="/app/my-work" className="rounded-full bg-white/20 px-3 py-1.5 text-sm font-semibold backdrop-blur hover:bg-white/30">✅ My work</Link>
+            </div>
+          </div>
+          <div className="hidden shrink-0 animate-float sm:block"><Orbi pose={due.length ? "phone" : "celebrate"} size={140} /></div>
+        </div>
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
         {stats.map((s) => (
-          <Link key={s.label} href={s.href} className="card p-4 hover:border-brand/50">
-            <s.icon className="size-4 text-brand" />
+          <Link key={s.label} href={s.href} className="card p-4 transition-transform hover:-translate-y-0.5">
+            <span className={`flex size-9 items-center justify-center rounded-xl ${s.tile}`}><s.icon className="size-4 text-brand" /></span>
             <p className="mt-2 text-xl font-bold">{s.value}</p>
             <p className="text-xs text-muted">{s.label}</p>
           </Link>

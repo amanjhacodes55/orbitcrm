@@ -2,7 +2,7 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
-import { ArrowDown, Copy, History, Pencil, Play, Plus, Trash2, Webhook, Workflow, Zap } from "lucide-react";
+import { ArrowDown, Copy, History, Pencil, Play, Plus, Trash2, Webhook, Workflow } from "lucide-react";
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import { Empty, Modal, Switch, timeAgo } from "@/components/ui";
@@ -86,7 +86,7 @@ export default function Automations({ boards, initial, apps, members, origin, ch
           <button className="btn btn-primary" onClick={() => setEdit(blank())} disabled={!boards.length}><Plus className="size-4" /> New automation</button>
         </div>
       </div>
-      {list.length === 0 && <div className="card"><Empty icon={<Zap className="size-8" />} title="No automations yet">Create one: e.g. “When Status changes to Qualified → create a deal and notify the team”.</Empty></div>}
+      {list.length === 0 && <div className="card"><Empty art="zap" title="No automations yet">Create one: e.g. “When Status changes to Qualified → create a deal and notify the team”.</Empty></div>}
       <div className="space-y-3">
         {list.map((a) => {
           const b = byId(a.board);

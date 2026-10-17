@@ -5,10 +5,12 @@ import { signOut } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import {
-  Bell, Boxes, CheckSquare, MessagesSquare, Search, ChevronDown, Code2, Home, LogOut, Menu, Moon, Plus, Settings, ShieldCheck, Store, Sun, Workflow, X, Check, PlusCircle,
+  Bell, Boxes, CheckSquare, MessagesSquare, Search, ChevronDown, Code2, Home, LogOut, Menu, Plus, Settings, ShieldCheck, Store, Workflow, X, Check, PlusCircle,
 } from "lucide-react";
 import { Avatar, Logo, Modal, timeAgo } from "@/components/ui";
 import CommandPalette from "@/components/CommandPalette";
+import ThemePicker, { ThemeSync } from "@/components/ThemePicker";
+import Orbi from "@/components/art/Orbi";
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import type { Ctx } from "@/lib/context";
@@ -30,18 +32,8 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
   const [mobile, setMobile] = useState(false);
   const [newBoard, setNewBoard] = useState(false);
   const [wsMenu, setWsMenu] = useState(false);
-  const [theme, setTheme] = useState("light");
-  useEffect(() => setTheme(document.documentElement.dataset.theme || "light"), []);
   useEffect(() => setMobile(false), [path]);
 
-  const toggleTheme = () => {
-    const t = theme === "dark" ? "light" : "dark";
-    document.documentElement.dataset.theme = t;
-    try {
-      localStorage.setItem("orbit-theme", t);
-    } catch {}
-    setTheme(t);
-  };
 
   async function createBoard(template: string) {
     const r = await api<{ id: string }>("/api/boards", { method: "POST", json: { template } });
@@ -67,7 +59,7 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
   };
 
   const sidebar = (
-    <aside className="flex h-full w-60 flex-col border-r border-border bg-surface">
+    <aside className="sidebar-bg flex h-full w-60 flex-col border-r border-border">
       <div className="flex h-14 items-center px-4">
         <Link href="/app">
           <Logo />
@@ -119,6 +111,10 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
           <Plus className="size-4" /> Add board
         </button>
       </div>
+      <div className="mx-3 mb-2 flex items-center gap-2 rounded-xl bg-brand-soft p-2.5">
+        <Orbi pose="think" size={46} />
+        <p className="text-[11px] leading-snug text-muted"><b className="text-text">Tip:</b> press <kbd className="rounded border border-border bg-surface px-1">Ctrl K</kbd> to search anything.</p>
+      </div>
       <div className="space-y-0.5 border-t border-border p-3">
         <Link href="/developer" className="flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm text-muted hover:bg-surface-2 hover:text-text">
           <Code2 className="size-4" /> Developer portal
@@ -142,7 +138,7 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface px-3 md:px-5">
+        <header className="relative z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-surface/80 px-3 backdrop-blur md:px-5">
           <button className="btn btn-ghost btn-sm !p-2 md:hidden" onClick={() => setMobile(true)} aria-label="Menu">
             {mobile ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
@@ -151,15 +147,14 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
             <kbd className="hidden rounded border border-border px-1.5 text-[10px] sm:block">Ctrl K</kbd>
           </button>
           <div className="flex-1" />
-          <button onClick={toggleTheme} className="btn btn-ghost btn-sm !p-2" aria-label="Toggle theme">
-            {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          </button>
+          <ThemePicker />
           <Bell_ />
           <UserMenu ctx={ctx} />
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
       <CommandPalette />
+      <ThemeSync theme={ctx.user.theme} />
       <Modal open={newBoard} onClose={() => setNewBoard(false)} title="Create a board">
         <div className="grid gap-2 sm:grid-cols-2">
           {TEMPLATES.map((t) => (
@@ -215,7 +210,7 @@ function Bell_() {
         <div className="card animate-pop absolute right-0 top-10 z-50 w-80 overflow-hidden shadow-pop">
           <p className="border-b border-border px-4 py-2.5 text-sm font-semibold">Notifications</p>
           <div className="max-h-96 overflow-y-auto">
-            {data.items.length === 0 && <p className="p-6 text-center text-sm text-muted">You&apos;re all caught up.</p>}
+            {data.items.length === 0 && <div className="flex flex-col items-center p-5 text-sm text-muted"><Orbi pose="sleep" size={80} />You&apos;re all caught up.</div>}
             {data.items.map((n) => (
               <Link key={n.id} href={n.link || "#"} onClick={() => setOpen(false)} className={clsx("block border-b border-border px-4 py-2.5 text-sm last:border-0 hover:bg-surface-2", !n.read && "bg-brand-soft/40")}>
                 {n.text}

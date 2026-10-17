@@ -2,8 +2,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { Copy, KeyRound, Plus, RefreshCw, Send, Trash2, Users, Webhook, Building2, MessagesSquare } from "lucide-react";
+import { Copy, KeyRound, Plus, RefreshCw, Send, Trash2, Users, Webhook, Building2, MessagesSquare, Palette } from "lucide-react";
 import Channels from "@/components/Channels";
+import { ThemeGrid } from "@/components/ThemePicker";
+import Orbi from "@/components/art/Orbi";
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import { Avatar, Modal, Switch, timeAgo } from "@/components/ui";
@@ -15,10 +17,10 @@ type Key = { id: string; name: string; prefix: string; createdAt: string; lastUs
 const EVENTS = ["item.created", "item.updated", "item.deleted", "activity.created"];
 
 export default function Settings({ ctx, boards, origin }: { ctx: Ctx; boards: { id: string; name: string; icon: string }[]; origin: string }) {
-  const [tab, setTab] = useState<"general" | "members" | "channels" | "api" | "webhooks">("general");
-  useEffect(() => { const t = new URLSearchParams(window.location.search).get("tab"); if (t === "channels" || t === "api" || t === "webhooks" || t === "members") setTab(t); }, []);
+  const [tab, setTab] = useState<"general" | "appearance" | "members" | "channels" | "api" | "webhooks">("general");
+  useEffect(() => { const t = new URLSearchParams(window.location.search).get("tab"); if (t === "channels" || t === "api" || t === "webhooks" || t === "members" || t === "appearance") setTab(t); }, []);
   const admin = ctx.workspace.role !== "member";
-  const tabs = [["general", "General", Building2], ["members", "Members", Users], ["channels", "Channels", MessagesSquare], ["api", "API keys", KeyRound], ["webhooks", "Webhooks", Webhook]] as const;
+  const tabs = [["general", "General", Building2], ["appearance", "Appearance", Palette], ["members", "Members", Users], ["channels", "Channels", MessagesSquare], ["api", "API keys", KeyRound], ["webhooks", "Webhooks", Webhook]] as const;
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
       <h1 className="text-2xl font-bold">Settings</h1>
@@ -32,6 +34,12 @@ export default function Settings({ ctx, boards, origin }: { ctx: Ctx; boards: { 
       </div>
       <div className="mt-6">
         {tab === "general" && <General ctx={ctx} admin={admin} />}
+        {tab === "appearance" && (
+          <div className="card p-6">
+            <div className="mb-4 flex items-center gap-4"><Orbi pose="celebrate" size={90} /><div><p className="font-display text-lg font-bold">Theme</p><p className="text-sm text-muted">Personal to you and saved to your account — your teammates keep their own vibe.</p></div></div>
+            <ThemeGrid />
+          </div>
+        )}
         {tab === "members" && <Members ctx={ctx} admin={admin} origin={origin} />}
         {tab === "channels" && (admin ? <Channels boards={boards} origin={origin} /> : <p className="text-sm text-muted">Only workspace admins can manage channels.</p>)}
         {tab === "api" && (admin ? <ApiKeys origin={origin} /> : <p className="text-sm text-muted">Only workspace admins can manage API keys.</p>)}

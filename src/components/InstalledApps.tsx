@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { Boxes, Settings, Trash2 } from "lucide-react";
+import { Settings, Trash2 } from "lucide-react";
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import { Empty, timeAgo } from "@/components/ui";
@@ -23,7 +23,7 @@ export default function InstalledApps({ apps, canAdmin, user, workspace }: { app
     toast(`${a.name} uninstalled`, "success");
     router.refresh();
   }
-  if (!apps.length) return <div className="mx-auto max-w-3xl p-8"><div className="card"><Empty icon={<Boxes className="size-8" />} title="No apps installed">Browse the <Link href="/app/marketplace" className="text-brand">Marketplace</Link> to add dialers, enrichment and more.</Empty></div></div>;
+  if (!apps.length) return <div className="mx-auto max-w-3xl p-8"><div className="card"><Empty art="puzzle" title="No apps installed">Browse the <Link href="/app/marketplace" className="text-brand">Marketplace</Link> to add dialers, enrichment and more.</Empty></div></div>;
   return (
     <div className="mx-auto grid max-w-6xl gap-5 p-4 md:grid-cols-[280px_1fr] md:p-8">
       <div className="space-y-2">

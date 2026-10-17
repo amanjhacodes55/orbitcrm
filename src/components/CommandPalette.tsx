@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import { Search } from "lucide-react";
 import { api } from "@/lib/client";
+import { Empty } from "@/components/ui";
 
 type R = { items: { id: string; name: string; board: string; boardName?: string; icon?: string; match: string }[]; boards: { id: string; name: string; icon: string }[]; automations: { id: string; name: string }[]; apps: { slug: string; name: string; icon: string }[] };
 type Row = { key: string; label: string; sub?: string; icon: string; href: string };
@@ -66,7 +67,7 @@ export default function CommandPalette() {
           <kbd className="rounded border border-border px-1.5 text-[10px] text-faint">ESC</kbd>
         </div>
         <div className="max-h-[50vh] overflow-y-auto p-1.5">
-          {rows.length === 0 && <p className="p-6 text-center text-sm text-muted">{q.length < 2 ? "Type to search" : "No results"}</p>}
+          {rows.length === 0 && (q.length < 2 ? <p className="p-6 text-center text-sm text-muted">Type to search</p> : <Empty art="search" title="Nothing found">Try another name, email or phone.</Empty>)}
           {rows.map((r, i) => (
             <button key={r.key} onMouseEnter={() => setIdx(i)} onClick={() => go(r)} className={clsx("flex w-full items-center gap-3 rounded-md px-3 py-2 text-left text-sm", i === idx && "bg-brand-soft")}>
               <span>{r.icon}</span>

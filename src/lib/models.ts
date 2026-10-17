@@ -14,6 +14,7 @@ const UserSchema = new Schema(
     image: { type: String, default: "" },
     providers: { type: [String], default: [] },
     workspace: { type: Schema.Types.ObjectId, ref: "Workspace" }, // currently selected workspace
+    theme: { type: String, default: "" }, // UI theme, follows the user across devices
   },
   opts
 );

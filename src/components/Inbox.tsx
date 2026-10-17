@@ -72,7 +72,7 @@ export default function Inbox({ channels, members, me, canAdmin }: { channels: C
   if (channels.length === 0)
     return (
       <div className="mx-auto max-w-2xl p-8">
-        <div className="card"><Empty icon={<MessagesSquare className="size-8" />} title="Connect your first channel">Add a live-chat widget for your website, an email address, SMS or WhatsApp number in <Link href="/app/settings?tab=channels" className="text-brand">Settings → Channels</Link>. Every conversation lands here and links to a lead automatically.</Empty></div>
+        <div className="card"><Empty art="mail" title="Connect your first channel">Add a live-chat widget for your website, an email address, SMS or WhatsApp number in <Link href="/app/settings?tab=channels" className="text-brand">Settings → Channels</Link>. Every conversation lands here and links to a lead automatically.</Empty></div>
       </div>
     );
 
@@ -125,7 +125,7 @@ export default function Inbox({ channels, members, me, canAdmin }: { channels: C
 
       {/* thread */}
       {!c ? (
-        <div className="hidden flex-1 items-center justify-center md:flex"><Empty icon={<MessagesSquare className="size-8" />} title="Select a conversation" /></div>
+        <div className="hidden flex-1 items-center justify-center md:flex"><Empty art="think" title="Select a conversation">Pick a chat on the left — Orbi is waiting.</Empty></div>
       ) : (
         <>
           <div className="flex min-w-0 flex-1 flex-col">

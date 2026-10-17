@@ -28,6 +28,7 @@
    - [Dialer](#5-dialer)
    - [Integrations: webhooks & REST API](#6-integrations-webhooks--rest-api)
    - [Developer platform & marketplace](#7-developer-platform--marketplace)
+   - [Themes & Orbi the mascot](#8-themes--orbi-the-mascot)
 3. [Quick start](#quick-start)
 4. [Configuration](#configuration)
 5. [A 5-minute walkthrough](#a-5-minute-walkthrough)
@@ -79,7 +80,7 @@ Most teams end up stitching together a CRM, a chat tool, a dialer and an automat
 - **My work:** your open tasks grouped into Overdue, Today, Upcoming and No date, plus every item assigned to you.
 - **Home dashboard:** open pipeline, won value, new leads, calls this week, automation runs, pipeline-by-stage chart, follow-ups due, recent activity.
 - **Global search (Ctrl/Cmd + K):** searches item names *and every field value*, plus boards, automations and apps, all keyboard-driven.
-- **Teams:** multiple workspaces, invite links, owner / admin / member roles, a notification bell, dark mode and a mobile layout.
+- **Teams:** multiple workspaces, invite links, owner / admin / member roles, a notification bell, 8 themes and a mobile layout.
 
 ### 3. Inbox & channels
 
@@ -144,6 +145,20 @@ Most teams end up stitching together a CRM, a chat tool, a dialer and an automat
   - 📈 **Lead Scorer:** a signed automation action, a settings page and an item panel.
 
 Full developer documentation is in the app at **`/developer/docs`**.
+
+### 8. Themes & Orbi the mascot
+
+Pick a vibe from the 🎨 button in the top bar or under **Settings → Appearance**. Themes change **colours, fonts, corner radius, border weight, shadow style and background art**, not just colours. The choice is saved to your account and applied before the first paint, so the page never flashes the wrong theme.
+
+| Theme | Feel |
+|---|---|
+| Orbit Light / Orbit Night | Clean default and its dark twin |
+| **Hedgehog Retro** | PostHog-inspired: warm paper, dotted grid, bold ink borders, chunky offset shadows, Space Grotesk |
+| Sunset · Ocean · Forest | Warm coral, teal breeze and earthy green, each with gradient backgrounds |
+| **Candy** | Playful pastels, pill buttons, Fredoka font |
+| **Neon Midnight** | Dark with glowing purple and cyan |
+
+**Orbi** is a friendly little planet with a ring, and OrbitCRM's mascot. It's drawn entirely in SVG (`src/components/art/`) with 11 poses: wave, phone, search, celebrate, sleep, rocket, think, mail, puzzle, zap, happy. It appears on the landing page, sign-in, onboarding, the dashboard banner, every empty state and the 404 page. Every illustration is painted with theme variables, so Orbi **changes colour with each theme**, and in Retro it gets bold ink outlines.
 
 ---
 

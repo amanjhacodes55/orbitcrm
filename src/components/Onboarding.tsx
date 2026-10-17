@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Sparkles, Users } from "lucide-react";
 import { api } from "@/lib/client";
 import { Logo } from "@/components/ui";
+import Orbi from "@/components/art/Orbi";
 
 export default function Onboarding({ name, hasWorkspace }: { name: string; hasWorkspace: boolean }) {
   const router = useRouter();
@@ -32,9 +33,9 @@ export default function Onboarding({ name, hasWorkspace }: { name: string; hasWo
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-soft via-bg to-bg px-4">
+    <div className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-xl space-y-5">
-        <Logo />
+        <div className="flex items-center justify-between"><Logo /><Orbi pose="wave" size={90} /></div>
         <div className="card p-7">
           <h1 className="text-2xl font-bold">{hasWorkspace ? "Create another workspace" : `Welcome, ${name.split(" ")[0]}! 👋`}</h1>
           <p className="mt-1 text-sm text-muted">A workspace holds your boards, automations, apps and team.</p>

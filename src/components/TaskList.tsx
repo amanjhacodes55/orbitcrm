@@ -4,6 +4,7 @@ import Link from "next/link";
 import clsx from "clsx";
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
+import { Empty } from "@/components/ui";
 
 type Task = { _id: string; text: string; due?: string; done: boolean; item?: { _id: string; name: string; board: string } | null };
 
@@ -19,7 +20,7 @@ export default function TaskList({ tasks: initial }: { tasks: Task[] }) {
     if (!r.ok) { toast(r.error, "error"); setTasks((xs) => [...xs, t]); }
     else toast("Task completed ✓", "success");
   }
-  if (!tasks.length) return <p className="text-sm text-muted">No open tasks. 🎉 Add tasks from any item&apos;s Tasks tab.</p>;
+  if (!tasks.length) return <Empty art="celebrate" title="All caught up!">No open tasks. Add tasks from any item&apos;s Tasks tab.</Empty>;
   return (
     <div className="space-y-4">
       {groups.map((g) => {

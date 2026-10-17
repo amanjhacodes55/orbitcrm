@@ -2,6 +2,8 @@
 import { useEffect } from "react";
 import clsx from "clsx";
 import { X } from "lucide-react";
+import { Spot } from "@/components/art/Scenes";
+import type { Pose } from "@/components/art/Orbi";
 
 export function Avatar({ name, image, size = 28, className }: { name?: string; image?: string; size?: number; className?: string }) {
   const initials = (name || "?").split(" ").map((s) => s[0]).join("").slice(0, 2).toUpperCase();
@@ -40,10 +42,10 @@ export function Modal({ open, onClose, title, children, wide, footer }: { open: 
   );
 }
 
-export function Empty({ icon, title, children }: { icon?: React.ReactNode; title: string; children?: React.ReactNode }) {
+export function Empty({ icon, title, children, art }: { icon?: React.ReactNode; title: string; children?: React.ReactNode; art?: Pose }) {
   return (
     <div className="flex flex-col items-center gap-2 py-12 text-center">
-      {icon && <div className="text-faint">{icon}</div>}
+      {art ? <Spot pose={art} size={120} /> : icon && <div className="text-faint">{icon}</div>}
       <p className="font-semibold">{title}</p>
       {children && <div className="max-w-md text-sm text-muted">{children}</div>}
     </div>

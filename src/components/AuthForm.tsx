@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api } from "@/lib/client";
 import { Logo } from "@/components/ui";
+import Orbi from "@/components/art/Orbi";
+import { Sparkles } from "@/components/art/Scenes";
 
 export default function AuthForm({ mode, google }: { mode: "login" | "register"; google: boolean }) {
   const router = useRouter();
@@ -34,9 +36,20 @@ export default function AuthForm({ mode, google }: { mode: "login" | "register";
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-soft via-bg to-bg px-4">
+    <div className="grid min-h-screen lg:grid-cols-[1fr_1.05fr]">
+      <div className="hero-gradient relative hidden flex-col justify-between overflow-hidden p-10 text-white lg:flex">
+        <Sparkles className="pointer-events-none absolute inset-0 size-full" />
+        <Link href="/" className="relative w-fit rounded-xl bg-white/90 px-3 py-1.5 text-[#2b2d42]"><Logo /></Link>
+        <div className="relative mx-auto text-center">
+          <div className="mx-auto w-fit animate-float"><Orbi pose={mode === "login" ? "wave" : "celebrate"} size={230} /></div>
+          <h2 className="mt-4 text-3xl font-extrabold">{mode === "login" ? "Welcome back, captain!" : "Let's launch your CRM"}</h2>
+          <p className="mx-auto mt-2 max-w-sm text-white/85">{mode === "login" ? "Your pipeline, inbox and automations missed you." : "Boards, inbox, automations and apps — set up in a minute with sample data."}</p>
+        </div>
+        <div className="relative rounded-2xl bg-white/15 p-4 text-sm backdrop-blur">“We replaced three tools with OrbitCRM — the website chat alone brought in 40 leads in a week.”<p className="mt-2 text-xs text-white/75">— A very happy (fictional) sales team</p></div>
+      </div>
+      <div className="flex items-center justify-center px-4 py-10">
       <div className="card w-full max-w-sm p-7">
-        <Link href="/">
+        <Link href="/" className="lg:hidden">
           <Logo />
         </Link>
         <h1 className="mt-6 text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
@@ -83,6 +96,7 @@ export default function AuthForm({ mode, google }: { mode: "login" | "register";
             {mode === "login" ? "Create an account" : "Log in"}
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );
