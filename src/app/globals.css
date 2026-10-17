@@ -1,0 +1,90 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface-2: #f5f6f8;
+  --surface-3: #eceef3;
+  --border: #e3e5ec;
+  --text: #323338;
+  --muted: #676879;
+  --faint: #9699a6;
+  --brand: #6161ff;
+  --brand-strong: #4b4bdc;
+  --brand-soft: #eeeeff;
+  --danger: #e2445c;
+  --success: #00c875;
+  --warn: #fdab3d;
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.07);
+  --shadow-lg: 0 16px 40px -12px rgb(16 24 40 / 0.25);
+  color-scheme: light;
+}
+[data-theme="dark"] {
+  --bg: #181b34;
+  --surface: #1f2240;
+  --surface-2: #262a4a;
+  --surface-3: #30355a;
+  --border: #353a62;
+  --text: #e6e8f5;
+  --muted: #a4a8c8;
+  --faint: #7a7fa6;
+  --brand: #7b7bff;
+  --brand-strong: #9393ff;
+  --brand-soft: #2b2e5c;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 16px 40px -12px rgb(0 0 0 / 0.6);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+  --color-warn: var(--warn);
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  --shadow-card: var(--shadow);
+  --shadow-pop: var(--shadow-lg);
+}
+
+html, body { background: var(--bg); color: var(--text); }
+body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
+* { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+
+@utility card { border-radius: 0.75rem; border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow); }
+@utility btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border-radius: 0.45rem;
+  padding: 0.45rem 0.8rem; font-size: 0.85rem; font-weight: 600; white-space: nowrap; transition: background-color .15s, color .15s, border-color .15s;
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+@utility btn-primary { background: var(--brand); color: #fff; &:hover:not(:disabled) { background: var(--brand-strong); } }
+@utility btn-secondary { border: 1px solid var(--border); background: var(--surface); color: var(--text); &:hover:not(:disabled) { background: var(--surface-2); } }
+@utility btn-ghost { color: var(--muted); &:hover:not(:disabled) { background: var(--surface-2); color: var(--text); } }
+@utility btn-danger { background: var(--danger); color: #fff; &:hover:not(:disabled) { opacity: .9; } }
+@utility btn-sm { padding: 0.3rem 0.55rem; font-size: 0.75rem; }
+@utility input {
+  width: 100%; border-radius: 0.45rem; border: 1px solid var(--border); background: var(--surface); padding: 0.45rem 0.65rem; font-size: 0.85rem; color: var(--text); outline: none;
+  &::placeholder { color: var(--faint); }
+  &:focus { border-color: var(--brand); box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 18%, transparent); }
+}
+@utility label { display: block; margin-bottom: 0.3rem; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+@utility chip { display: inline-flex; align-items: center; gap: .25rem; border-radius: 9999px; border: 1px solid var(--border); background: var(--surface-2); padding: .1rem .55rem; font-size: .72rem; font-weight: 500; color: var(--muted); }
+
+@keyframes pop { from { transform: scale(.97); opacity: 0 } to { transform: none; opacity: 1 } }
+.animate-pop { animation: pop .16s ease-out; }
+@keyframes slidein { from { transform: translateX(24px); opacity: 0 } to { transform: none; opacity: 1 } }
+.animate-slidein { animation: slidein .18s ease-out; }
+code { font-family: var(--font-mono); font-size: .85em; background: var(--surface-3); padding: .1em .35em; border-radius: 4px; }
+pre code { background: none; padding: 0; }

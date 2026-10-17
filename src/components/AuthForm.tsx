@@ -1,0 +1,89 @@
+"use client";
+import { signIn } from "next-auth/react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState } from "react";
+import { Loader2 } from "lucide-react";
+import { api } from "@/lib/client";
+import { Logo } from "@/components/ui";
+
+export default function AuthForm({ mode, google }: { mode: "login" | "register"; google: boolean }) {
+  const router = useRouter();
+  const sp = useSearchParams();
+  const next = sp.get("next") || "/app";
+  const [f, setF] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState(sp.get("error") ? "Sign-in failed, try again." : "");
+  const [busy, setBusy] = useState(false);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError("");
+    if (mode === "register") {
+      const r = await api("/api/register", { method: "POST", json: f });
+      if (!r.ok) {
+        setBusy(false);
+        return setError(r.error);
+      }
+    }
+    const res = await signIn("credentials", { email: f.email, password: f.password, redirect: false });
+    setBusy(false);
+    if (!res || res.error) return setError("Wrong email or password.");
+    router.push(next);
+    router.refresh();
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-soft via-bg to-bg px-4">
+      <div className="card w-full max-w-sm p-7">
+        <Link href="/">
+          <Logo />
+        </Link>
+        <h1 className="mt-6 text-2xl font-bold">{mode === "login" ? "Welcome back" : "Create your account"}</h1>
+        <p className="mt-1 text-sm text-muted">{mode === "login" ? "Log in to your workspace" : "Free forever for small teams"}</p>
+        {google && (
+          <>
+            <button onClick={() => signIn("google", { callbackUrl: next })} className="btn btn-secondary mt-6 w-full">
+              <svg viewBox="0 0 24 24" className="size-4">
+                <path fill="#EA4335" d="M12 10.2v3.9h5.5c-.2 1.3-1.6 3.9-5.5 3.9-3.3 0-6-2.7-6-6.1s2.7-6.1 6-6.1c1.9 0 3.1.8 3.8 1.5l2.6-2.5C16.8 3.3 14.6 2.3 12 2.3 6.7 2.3 2.4 6.6 2.4 12s4.3 9.7 9.6 9.7c5.5 0 9.2-3.9 9.2-9.4 0-.6-.1-1.1-.2-1.6H12z" />
+              </svg>
+              Continue with Google
+            </button>
+            <div className="my-4 flex items-center gap-3 text-xs text-faint">
+              <span className="h-px flex-1 bg-border" />
+              or
+              <span className="h-px flex-1 bg-border" />
+            </div>
+          </>
+        )}
+        <form onSubmit={submit} className={google ? "space-y-3" : "mt-6 space-y-3"}>
+          {mode === "register" && (
+            <div>
+              <label className="label">Name</label>
+              <input className="input" required value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} />
+            </div>
+          )}
+          <div>
+            <label className="label">Work email</label>
+            <input className="input" type="email" required value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} autoComplete="email" />
+          </div>
+          <div>
+            <label className="label">Password</label>
+            <input className="input" type="password" required minLength={6} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} autoComplete={mode === "login" ? "current-password" : "new-password"} />
+          </div>
+          {error && <p className="rounded-md bg-danger/10 px-3 py-2 text-sm text-danger">{error}</p>}
+          <button className="btn btn-primary w-full" disabled={busy}>
+            {busy && <Loader2 className="size-4 animate-spin" />}
+            {mode === "login" ? "Log in" : "Sign up"}
+          </button>
+        </form>
+        <p className="mt-5 text-center text-sm text-muted">
+          {mode === "login" ? "New to OrbitCRM? " : "Already have an account? "}
+          <Link href={`/${mode === "login" ? "register" : "login"}?next=${encodeURIComponent(next)}`} className="font-semibold text-brand">
+            {mode === "login" ? "Create an account" : "Log in"}
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
+}
