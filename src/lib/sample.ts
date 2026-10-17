@@ -1,5 +1,5 @@
 import "server-only";
-import { App, Automation, Board, Item, Activity, User } from "@/lib/models";
+import { App, Automation, Board, Item, Activity, User, Channel, Conversation, Message } from "@/lib/models";
 import { TEMPLATES } from "@/lib/templates";
 import { sha256, token } from "@/lib/ids";
 import { installApp } from "@/lib/install";
@@ -161,5 +161,20 @@ export async function seedSampleData(workspace: string, userId: string) {
           actions: [{ type: "set_column", config: { column: status.id, value: "Contacted" } }, { type: "set_column", config: { column: col(leads, "Next follow-up").id, value: "{{today}}" } }],
         }]
       : []),
+  ]);
+
+  // Inbox: a website live-chat channel with an auto-reply and one sample conversation
+  const chat = await Channel.create({ workspace, type: "webchat", name: "Website chat", token: token("ch", 12), signingSecret: token("chsec", 18), settings: { leadBoard: String(leads._id), autoCreateLead: true } });
+  await Automation.create({
+    workspace, board: leads._id, createdBy: userId, name: "New website chat → instant auto-reply",
+    trigger: { type: "message_received", config: { channel: String(chat._id), onlyNew: true } },
+    actions: [{ type: "reply_message", config: { text: "Hi {{payload.contact.name}}! 👋 Thanks for reaching out — a teammate will reply in a few minutes." } }, { type: "add_note", config: { text: "Started a website chat: “{{payload.text}}”" } }],
+  });
+  const kavya = createdLeads[6];
+  const conv = await Conversation.create({ workspace, channel: chat._id, contact: { name: "Kavya Nair", email: "kavya.nair@yahoo.com", key: "kavya.nair@yahoo.com" }, item: kavya._id, board: leads._id, status: "open", lastMessage: "Do you offer a startup discount?", lastMessageAt: new Date(), unread: 1 });
+  await Message.insertMany([
+    { workspace, conversation: conv._id, direction: "in", authorLabel: "Kavya Nair", text: "Hi! I saw your pricing page. Is there a WhatsApp integration?", createdAt: new Date(Date.now() - 600000) },
+    { workspace, conversation: conv._id, direction: "out", author: userId, authorLabel: "", text: "Yes — WhatsApp works through Twilio or any provider, messages land right here in the Inbox.", delivery: "sent", createdAt: new Date(Date.now() - 300000) },
+    { workspace, conversation: conv._id, direction: "in", authorLabel: "Kavya Nair", text: "Do you offer a startup discount?", createdAt: new Date() },
   ]);
 }

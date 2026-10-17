@@ -9,7 +9,7 @@ function H({ id, children }: { id: string; children: React.ReactNode }) {
   return <h2 id={id} className="scroll-mt-20 pt-6 text-xl font-bold">{children}</h2>;
 }
 
-const TOC = [["overview", "Overview"], ["auth", "Authentication"], ["oauth", "OAuth install flow"], ["rest", "REST API"], ["webhooks", "Webhooks"], ["sdk", "App SDK (embedded UI)"], ["dialer", "Building a dialer"], ["actions", "Automation actions"], ["triggers", "Automation triggers"], ["catch", "Catch hooks"], ["review", "Review & publishing"]];
+const TOC = [["overview", "Overview"], ["auth", "Authentication"], ["oauth", "OAuth install flow"], ["rest", "REST API"], ["webhooks", "Webhooks"], ["sdk", "App SDK (embedded UI)"], ["dialer", "Building a dialer"], ["actions", "Automation actions"], ["triggers", "Automation triggers"], ["catch", "Catch hooks"], ["channels", "Channels & live chat"], ["review", "Review & publishing"]];
 
 export default function Docs() {
   return (
@@ -120,6 +120,20 @@ if (!crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(req.headers["x-or
 
         <H id="catch">Catch hooks</H>
         <p>Any automation can use the <b>catch hook</b> trigger. It gets a secret URL; POST JSON (or form data) to it from website forms, Zapier, Make or any backend. Fields are available as <code>{"{{payload.*}}"}</code>. Include <code>item_id</code> to act on an existing item.</p>
+
+        <H id="channels">Channels & live chat</H>
+        <p>Admins add channels in <b>Settings → Channels</b>. Every inbound message lands in the <b>Inbox</b>, is matched to a lead by email/phone (or creates one), is logged on the lead&apos;s timeline and fires the <b>“When a message arrives”</b> automation trigger. The <b>“Reply to the conversation”</b> action sends auto-replies.</p>
+        <p><b>Website live chat</b> — paste one tag before <code>&lt;/body&gt;</code>:</p>
+        <Code>{`<script src="${origin}/widget.js" data-channel="ch_xxx" data-color="#6161ff" async></script>`}</Code>
+        <p><b>Email / SMS / WhatsApp / custom</b> — point your provider at the channel&apos;s inbound URL. It accepts our JSON, Twilio form posts (<code>From</code>, <code>Body</code>, <code>ProfileName</code>) and email-parse webhooks (<code>from</code>, <code>subject</code>, <code>text</code> / <code>stripped-text</code> / <code>TextBody</code>):</p>
+        <Code>{`curl -X POST ${origin}/api/public/inbound/ch_xxx \
+  -H "Content-Type: application/json" \
+  -d '{"from":"+919811122233","name":"Arnav","text":"Price for 10 users?"}'
+
+→ { "ok": true, "conversation_id": "…", "new_conversation": true, "lead_id": "…" }`}</Code>
+        <p><b>Replies</b>: live chat is delivered to the widget instantly; email via <code>SMTP_URL</code>; SMS/WhatsApp via the channel&apos;s Twilio credentials, or POSTed (signed with <code>X-Orbit-Signature</code>) to the channel&apos;s outbound webhook:</p>
+        <Code>{`{ "event": "message.outbound", "channel": { "id": "…", "type": "whatsapp", "name": "WhatsApp" },
+  "conversation_id": "…", "to": { "name": "Arnav", "phone": "+919811122233" }, "text": "₹999/user" }`}</Code>
 
         <H id="review">Review & publishing</H>
         <ul className="list-disc space-y-1 pl-6">

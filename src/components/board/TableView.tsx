@@ -8,8 +8,11 @@ import type { BoardT, Column, ItemT, Member } from "./types";
 const TYPE_ICON: Record<string, string> = { text: "Aa", status: "◉", person: "👤", date: "📅", number: "#", currency: "₹", email: "@", phone: "☎", dropdown: "▾", checkbox: "☑", link: "🔗", rating: "★" };
 
 export default function TableView({
-  board, items, members, onPatchItem, onAddItem, onOpen, onDelete, onSaveBoard, onAddColumn, onEditColumns,
+  board, items, members, onPatchItem, onAddItem, onOpen, onDelete, onSaveBoard, onAddColumn, onEditColumns, hidden = [], selected, onSelect,
 }: {
+  hidden?: string[];
+  selected: Set<string>;
+  onSelect: (ids: string[], on: boolean) => void;
   board: BoardT;
   items: ItemT[];
   members: Member[];
@@ -23,7 +26,7 @@ export default function TableView({
 }) {
   const [draft, setDraft] = useState<Record<string, string>>({});
   const nameW = 280;
-  const cols: Column[] = board.columns;
+  const cols: Column[] = board.columns.filter((c) => !hidden.includes(c.id));
   const total = nameW + cols.reduce((a, c) => a + (c.width || 150), 0) + 44;
 
   const toggleGroup = (gid: string) => onSaveBoard({ groups: board.groups.map((g) => (g.id === gid ? { ...g, collapsed: !g.collapsed } : g)) });
@@ -46,6 +49,9 @@ export default function TableView({
                 className="rounded bg-transparent px-1 text-base font-semibold outline-none focus:ring-2 focus:ring-brand/40"
                 style={{ color: g.color }}
               />
+              {rows.length > 0 && (
+                <input type="checkbox" className="ml-1 accent-[var(--brand)]" title="Select all in group" checked={rows.every((r) => selected.has(r._id))} onChange={(e) => onSelect(rows.map((r) => r._id), e.target.checked)} />
+              )}
               <span className="text-xs text-faint">{rows.length} {rows.length === 1 ? board.itemLabel.toLowerCase() : `${board.itemLabel.toLowerCase()}s`}</span>
             </div>
             {!g.collapsed && (
@@ -66,7 +72,8 @@ export default function TableView({
                 </div>
                 {rows.map((it) => (
                   <div key={it._id} className="group flex h-9 border-b border-border text-sm last:border-b-0 hover:bg-surface-2/60">
-                    <div className="sticky left-0 z-10 flex items-center gap-1 bg-surface pl-3 pr-1 group-hover:bg-surface-2" style={{ width: nameW }}>
+                    <div className={clsx("sticky left-0 z-10 flex items-center gap-1 bg-surface pl-2 pr-1 group-hover:bg-surface-2", selected.has(it._id) && "!bg-brand-soft")} style={{ width: nameW }}>
+                      <input type="checkbox" className="mr-1 shrink-0 accent-[var(--brand)]" checked={selected.has(it._id)} onChange={(e) => onSelect([it._id], e.target.checked)} aria-label="Select" />
                       <input
                         defaultValue={it.name}
                         key={it.name}

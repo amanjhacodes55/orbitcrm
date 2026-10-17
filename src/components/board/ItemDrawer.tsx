@@ -11,7 +11,7 @@ import Cell from "./Cell";
 import { displayValue } from "@/lib/values";
 import type { BoardT, ItemT, Member, PanelApp } from "./types";
 
-type Act = { _id: string; type: string; text: string; data: Record<string, unknown>; actor?: { name: string; image?: string } | null; actorLabel?: string; createdAt: string };
+type Act = { _id: string; type: string; text: string; data: Record<string, unknown>; actor?: { name: string; image?: string } | null; actorLabel?: string; createdAt: string; due?: string; done?: boolean; assignee?: { _id: string; name: string; image?: string } | null };
 
 export default function ItemDrawer({ board, item, members, panelApps, user, workspace, onClose, onPatch, onDelete }: {
   board: BoardT; item: ItemT; members: Member[]; panelApps: PanelApp[]; user: Record<string, unknown>; workspace: Record<string, unknown>;
@@ -19,7 +19,8 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
 }) {
   const toast = useToast();
   const dial = useDialer();
-  const [tab, setTab] = useState<"activity" | "apps">("activity");
+  const [tab, setTab] = useState<"activity" | "tasks" | "apps">("activity");
+  const [task, setTask] = useState({ text: "", due: "", assignee: String(user.id || "") });
   const [acts, setActs] = useState<Act[] | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
@@ -48,6 +49,25 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
     load();
   }
 
+  async function addTask() {
+    if (!task.text.trim()) return;
+    const r = await api(`/api/items/${item._id}/activities`, { method: "POST", json: { type: "task", text: task.text, due: task.due || null, assignee: task.assignee || null } });
+    if (!r.ok) return toast(r.error, "error");
+    setTask({ ...task, text: "", due: "" });
+    load();
+  }
+  async function toggleTask(a: Act) {
+    setActs((xs) => xs?.map((x) => (x._id === a._id ? { ...x, done: !x.done } : x)) || null);
+    await api(`/api/activities/${a._id}`, { method: "PATCH", json: { done: !a.done } });
+  }
+  async function deleteAct(a: Act) {
+    if (!confirm("Delete?")) return;
+    const r = await api(`/api/activities/${a._id}`, { method: "DELETE" });
+    if (!r.ok) return toast(r.error, "error");
+    load();
+  }
+  const tasks = (acts || []).filter((a) => a.type === "task");
+  const timeline = (acts || []).filter((a) => a.type !== "task");
   const phoneCol = board.columns.find((c) => c.type === "phone");
   const phone = phoneCol ? String(item.values[phoneCol.id] ?? "") : "";
   const emailCol = board.columns.find((c) => c.type === "email");
@@ -105,14 +125,36 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
             ))}
           </div>
           <div className="flex gap-1 border-b border-border px-4">
-            {(["activity", "apps"] as const).map((t) => (
+            {(["activity", "tasks", "apps"] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)} className={clsx("relative px-3 py-2.5 text-sm font-medium", tab === t ? "text-text" : "text-muted")}>
-                {t === "activity" ? "Activity" : `Apps (${panelApps.length})`}
+                {t === "activity" ? "Activity" : t === "tasks" ? `Tasks (${tasks.filter((x) => !x.done).length})` : `Apps (${panelApps.length})`}
                 {tab === t && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded bg-brand" />}
               </button>
             ))}
           </div>
-          {tab === "activity" ? (
+          {tab === "tasks" ? (
+            <div className="space-y-3 p-5">
+              <div className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_140px_150px_auto]">
+                <input className="input" placeholder="Task, e.g. Send proposal" value={task.text} onChange={(e) => setTask({ ...task, text: e.target.value })} onKeyDown={(e) => e.key === "Enter" && addTask()} />
+                <input className="input" type="date" value={task.due} onChange={(e) => setTask({ ...task, due: e.target.value })} />
+                <select className="input" value={task.assignee} onChange={(e) => setTask({ ...task, assignee: e.target.value })}>{members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}</select>
+                <button className="btn btn-primary" onClick={addTask} disabled={!task.text.trim()}>Add</button>
+              </div>
+              {tasks.length === 0 && <p className="text-sm text-muted">No tasks yet.</p>}
+              {tasks.map((a) => {
+                const overdue = !a.done && a.due && a.due.slice(0, 10) < new Date().toISOString().slice(0, 10);
+                return (
+                  <div key={a._id} className="group flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                    <input type="checkbox" className="size-4 accent-[var(--brand)]" checked={!!a.done} onChange={() => toggleTask(a)} aria-label="Done" />
+                    <span className={clsx("min-w-0 flex-1", a.done && "text-muted line-through")}>{a.text}</span>
+                    {a.assignee && <Avatar name={a.assignee.name} image={a.assignee.image} size={20} />}
+                    {a.due && <span className={clsx("text-xs", overdue ? "text-danger" : "text-muted")}>{a.due.slice(0, 10)}</span>}
+                    <button onClick={() => deleteAct(a)} className="text-faint opacity-0 hover:text-danger group-hover:opacity-100" aria-label="Delete task"><Trash2 className="size-3.5" /></button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : tab === "activity" ? (
             <div className="space-y-4 p-5">
               <div className="rounded-lg border border-border">
                 <textarea className="block w-full resize-y rounded-t-lg bg-transparent p-3 text-sm outline-none" rows={3} placeholder="Write an update or note…" value={note} onChange={(e) => setNote(e.target.value)} />
@@ -130,9 +172,9 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
                 </div>
               </div>
               {acts === null && <p className="text-sm text-muted">Loading…</p>}
-              {acts?.length === 0 && <p className="text-sm text-muted">No activity yet.</p>}
+              {timeline.length === 0 && acts && <p className="text-sm text-muted">No activity yet.</p>}
               <ol className="relative space-y-4 border-l border-border pl-5">
-                {acts?.map((a) => (
+                {timeline.map((a) => (
                   <li key={a._id} className="relative">
                     <span className={clsx("absolute -left-[31px] flex size-5 items-center justify-center rounded-full text-white", a.type === "call" ? "bg-success" : a.type === "note" ? "bg-brand" : a.type === "update" ? "bg-warn" : a.type === "email" ? "bg-[#579bfc]" : "bg-faint")}>
                       {a.type === "call" ? <Phone className="size-3" /> : a.type === "note" ? <MessageSquare className="size-3" /> : a.type === "update" ? <RefreshCw className="size-3" /> : a.type === "created" ? <PlusCircle className="size-3" /> : <Zap className="size-3" />}

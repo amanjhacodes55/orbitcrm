@@ -1,6 +1,6 @@
 /** Column value helpers shared by server and client. */
 export type Opt = { id: string; label: string; color: string };
-export type Col = { id: string; title: string; type: string; width?: number; options?: Opt[] };
+export type Col = { id: string; title: string; type: string; width?: number; options?: Opt[]; relationBoard?: string };
 
 export function displayValue(col: Col, v: unknown, users?: Record<string, string>): string {
   if (v === null || v === undefined || v === "") return "";
@@ -12,6 +12,8 @@ export function displayValue(col: Col, v: unknown, users?: Record<string, string
       return users?.[String(v)] ?? String(v);
     case "checkbox":
       return v ? "Yes" : "No";
+    case "relation":
+      return Array.isArray(v) ? `${v.length} linked` : "";
     case "currency":
       return typeof v === "number" ? `₹${v.toLocaleString("en-IN")}` : String(v);
     default:
@@ -42,6 +44,8 @@ export function coerceValue(col: Col, raw: unknown): unknown {
     }
     case "checkbox":
       return s === true || ["true", "yes", "1", "on"].includes(String(s).toLowerCase());
+    case "relation":
+      return Array.isArray(s) ? s.filter((x) => typeof x === "string" && /^[a-f0-9]{24}$/.test(x)).slice(0, 50) : typeof s === "string" && /^[a-f0-9]{24}$/.test(s) ? [s] : null;
     case "date": {
       const d = new Date(String(s));
       return isNaN(d.getTime()) ? null : d.toISOString().slice(0, 10);

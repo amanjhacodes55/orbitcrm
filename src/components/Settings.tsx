@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
-import { Copy, KeyRound, Plus, RefreshCw, Send, Trash2, Users, Webhook, Building2 } from "lucide-react";
+import { Copy, KeyRound, Plus, RefreshCw, Send, Trash2, Users, Webhook, Building2, MessagesSquare } from "lucide-react";
+import Channels from "@/components/Channels";
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import { Avatar, Modal, Switch, timeAgo } from "@/components/ui";
@@ -14,9 +15,10 @@ type Key = { id: string; name: string; prefix: string; createdAt: string; lastUs
 const EVENTS = ["item.created", "item.updated", "item.deleted", "activity.created"];
 
 export default function Settings({ ctx, boards, origin }: { ctx: Ctx; boards: { id: string; name: string; icon: string }[]; origin: string }) {
-  const [tab, setTab] = useState<"general" | "members" | "api" | "webhooks">("general");
+  const [tab, setTab] = useState<"general" | "members" | "channels" | "api" | "webhooks">("general");
+  useEffect(() => { const t = new URLSearchParams(window.location.search).get("tab"); if (t === "channels" || t === "api" || t === "webhooks" || t === "members") setTab(t); }, []);
   const admin = ctx.workspace.role !== "member";
-  const tabs = [["general", "General", Building2], ["members", "Members", Users], ["api", "API keys", KeyRound], ["webhooks", "Webhooks", Webhook]] as const;
+  const tabs = [["general", "General", Building2], ["members", "Members", Users], ["channels", "Channels", MessagesSquare], ["api", "API keys", KeyRound], ["webhooks", "Webhooks", Webhook]] as const;
   return (
     <div className="mx-auto max-w-4xl p-4 md:p-8">
       <h1 className="text-2xl font-bold">Settings</h1>
@@ -31,6 +33,7 @@ export default function Settings({ ctx, boards, origin }: { ctx: Ctx; boards: { 
       <div className="mt-6">
         {tab === "general" && <General ctx={ctx} admin={admin} />}
         {tab === "members" && <Members ctx={ctx} admin={admin} origin={origin} />}
+        {tab === "channels" && (admin ? <Channels boards={boards} origin={origin} /> : <p className="text-sm text-muted">Only workspace admins can manage channels.</p>)}
         {tab === "api" && (admin ? <ApiKeys origin={origin} /> : <p className="text-sm text-muted">Only workspace admins can manage API keys.</p>)}
         {tab === "webhooks" && (admin ? <Webhooks boards={boards} /> : <p className="text-sm text-muted">Only workspace admins can manage webhooks.</p>)}
       </div>

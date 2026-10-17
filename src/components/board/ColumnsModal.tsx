@@ -6,12 +6,12 @@ import type { BoardT, Column } from "./types";
 
 const TYPES = [
   ["text", "Text"], ["status", "Status"], ["person", "Person"], ["date", "Date"], ["number", "Number"], ["currency", "Currency"],
-  ["email", "Email"], ["phone", "Phone"], ["dropdown", "Dropdown"], ["checkbox", "Checkbox"], ["link", "Link"], ["rating", "Rating"],
+  ["email", "Email"], ["phone", "Phone"], ["dropdown", "Dropdown"], ["checkbox", "Checkbox"], ["link", "Link"], ["rating", "Rating"], ["relation", "Connect board (link items)"],
 ];
 const COLORS = ["#00c875", "#fdab3d", "#e2445c", "#579bfc", "#a25ddc", "#ff642e", "#037f4c", "#c4c4c4", "#ff158a", "#9cd326"];
 const rid = () => Math.random().toString(36).slice(2, 9);
 
-export default function ColumnsModal({ open, onClose, board, onSave, startAdding }: { open: boolean; onClose: () => void; board: BoardT; onSave: (cols: Column[]) => void; startAdding?: boolean }) {
+export default function ColumnsModal({ open, onClose, board, onSave, startAdding, boards = [] }: { open: boolean; onClose: () => void; board: BoardT; onSave: (cols: Column[]) => void; startAdding?: boolean; boards?: { id: string; name: string; icon: string }[] }) {
   const [cols, setCols] = useState<Column[]>(board.columns);
   const [newType, setNewType] = useState("text");
   useEffect(() => {
@@ -46,6 +46,15 @@ export default function ColumnsModal({ open, onClose, board, onSave, startAdding
                 <button className="btn btn-ghost btn-sm !p-1.5 hover:!text-danger" onClick={() => confirm(`Delete column “${c.title}”? Its data is hidden.`) && setCols(cols.filter((_, j) => j !== i))} aria-label="Delete column"><Trash2 className="size-3.5" /></button>
               </div>
             </div>
+            {c.type === "relation" && (
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                <span className="text-muted">Links items from</span>
+                <select className="input !w-auto !py-1" value={c.relationBoard || ""} onChange={(e) => upd(i, { relationBoard: e.target.value })}>
+                  <option value="">— choose a board —</option>
+                  {boards.map((b) => <option key={b.id} value={b.id}>{b.icon} {b.name}</option>)}
+                </select>
+              </div>
+            )}
             {(c.type === "status" || c.type === "dropdown") && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {c.options.map((o, oi) => (

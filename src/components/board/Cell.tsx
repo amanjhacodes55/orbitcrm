@@ -5,6 +5,7 @@ import { Check, ExternalLink, Mail, Phone, Star, UserPlus } from "lucide-react";
 import { Avatar } from "@/components/ui";
 import { useDialer } from "@/components/Dialer";
 import type { Column, ItemT, Member } from "./types";
+import RelationCell from "./RelationCell";
 
 function Popover({ open, onClose, children, className }: { open: boolean; onClose: () => void; children: React.ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -56,6 +57,8 @@ export default function Cell({ col, item, members, onChange, compact }: { col: C
   const dial = useDialer();
 
   switch (col.type) {
+    case "relation":
+      return <RelationCell board={col.relationBoard} value={v} compact={compact} onChange={(ids) => onChange(ids)} />;
     case "status":
     case "dropdown": {
       const o = col.options.find((x) => x.id === v);

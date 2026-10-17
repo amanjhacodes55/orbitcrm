@@ -11,6 +11,7 @@ export const TRIGGERS = {
   column_changed: "When a column changes",
   catch_hook: "When a webhook is received (catch hook)",
   app_trigger: "When an app fires a trigger",
+  message_received: "When a message arrives in the Inbox",
 } as const;
 
 export const ACTIONS = {
@@ -21,6 +22,7 @@ export const ACTIONS = {
   notify: "Notify someone",
   send_webhook: "Send a webhook (HTTP request)",
   app_action: "Run an app action",
+  reply_message: "Reply to the conversation",
 } as const;
 
 const MAX_DEPTH = 3;
@@ -115,6 +117,15 @@ export async function runAutomation(a: AutoDoc, input: { board: BoardDoc; item: 
         item = created.toObject() as unknown as ItemDoc;
         board = target as unknown as BoardDoc;
         steps.push({ action: type, ok: true, detail: `Created “${item!.name}”` });
+        continue;
+      }
+      if (type === "reply_message") {
+        const convId = (input.payload as { conversationId?: string })?.conversationId;
+        if (!convId) throw new Error("Only works with the “message arrives” trigger");
+        const { sendReply } = await import("@/lib/inbox");
+        const text = render(String(cfg.text || ""), ctx());
+        const m = await sendReply(convId, text, { label: actor.label || "Automation" });
+        steps.push({ action: type, ok: !m.delivery.startsWith("failed"), detail: `${text.slice(0, 80)} (${m.delivery})` });
         continue;
       }
       if (!item) throw new Error("No item in context (add a “Create an item” step first)");
@@ -220,4 +231,28 @@ export async function runAppTrigger(workspace: string, appId: string, key: strin
     results.push({ automation: a.name, status: r.status });
   }
   return results;
+}
+
+/** Inbox trigger: a customer message arrived. Runs automations on the channel's lead board. */
+export async function runMessageAutomations(
+  ch: { _id: unknown; workspace: unknown; type: string; name: string; settings: Record<string, unknown> },
+  conv: { _id: unknown; item?: unknown; contact: { name?: string; email?: string; phone?: string } },
+  msg: { text: string; isNew: boolean }
+) {
+  const autos = await Automation.find({ workspace: ch.workspace, enabled: true, "trigger.type": "message_received" }).lean();
+  for (const a of autos) {
+    const cfg = ((a.trigger as { config?: Record<string, unknown> }).config || {}) as Record<string, unknown>;
+    if (cfg.channel && String(cfg.channel) !== String(ch._id)) continue;
+    if (cfg.onlyNew && !msg.isNew) continue;
+    if (cfg.contains && !msg.text.toLowerCase().includes(String(cfg.contains).toLowerCase())) continue;
+    const board = await Board.findById(a.board).lean();
+    if (!board) continue;
+    const item = conv.item ? await Item.findOne({ _id: conv.item, board: board._id }).lean() : null;
+    await runAutomation(a as unknown as AutoDoc, {
+      board: board as unknown as BoardDoc,
+      item: (item as unknown as ItemDoc) || null,
+      payload: { text: msg.text, isNew: msg.isNew, channel: ch.name, channelType: ch.type, contact: conv.contact, conversationId: String(conv._id) },
+      depth: 0,
+    });
+  }
 }

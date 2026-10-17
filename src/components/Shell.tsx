@@ -5,9 +5,10 @@ import { signOut } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import clsx from "clsx";
 import {
-  Bell, Boxes, ChevronDown, Code2, Home, LogOut, Menu, Moon, Plus, Settings, ShieldCheck, Store, Sun, Workflow, X, Check, PlusCircle,
+  Bell, Boxes, CheckSquare, MessagesSquare, Search, ChevronDown, Code2, Home, LogOut, Menu, Moon, Plus, Settings, ShieldCheck, Store, Sun, Workflow, X, Check, PlusCircle,
 } from "lucide-react";
 import { Avatar, Logo, Modal, timeAgo } from "@/components/ui";
+import CommandPalette from "@/components/CommandPalette";
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import type { Ctx } from "@/lib/context";
@@ -94,6 +95,8 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
       </div>
       <nav className="mt-3 space-y-0.5 px-3">
         {nav("/app", "Home", Home, true)}
+        {nav("/app/my-work", "My work", CheckSquare)}
+        {nav("/app/inbox", "Inbox", MessagesSquare)}
         {nav("/app/automations", "Automations", Workflow)}
         {nav("/app/marketplace", "Marketplace", Store)}
         {nav("/app/apps", "Installed apps", Boxes)}
@@ -143,6 +146,10 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
           <button className="btn btn-ghost btn-sm !p-2 md:hidden" onClick={() => setMobile(true)} aria-label="Menu">
             {mobile ? <X className="size-4" /> : <Menu className="size-4" />}
           </button>
+          <button onClick={() => window.dispatchEvent(new Event("orbit:search"))} className="flex h-9 w-full max-w-md items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 text-sm text-faint hover:border-brand/50">
+            <Search className="size-4" /> <span className="flex-1 text-left">Search everything…</span>
+            <kbd className="hidden rounded border border-border px-1.5 text-[10px] sm:block">Ctrl K</kbd>
+          </button>
           <div className="flex-1" />
           <button onClick={toggleTheme} className="btn btn-ghost btn-sm !p-2" aria-label="Toggle theme">
             {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
@@ -152,6 +159,7 @@ export default function Shell({ ctx, boards, workspaces, children }: { ctx: Ctx;
         </header>
         <main className="min-h-0 flex-1 overflow-y-auto">{children}</main>
       </div>
+      <CommandPalette />
       <Modal open={newBoard} onClose={() => setNewBoard(false)} title="Create a board">
         <div className="grid gap-2 sm:grid-cols-2">
           {TEMPLATES.map((t) => (

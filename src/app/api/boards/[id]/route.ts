@@ -15,7 +15,15 @@ export const GET = route<P>(async (_req, ctx, { id }) => {
 });
 
 const Opt = z.object({ id: z.string(), label: z.string().max(40), color: z.string().max(20) });
-const Col = z.object({ id: z.string(), title: z.string().trim().min(1).max(60), type: z.enum(COLUMN_TYPES), width: z.number().min(80).max(600).optional(), options: z.array(Opt).max(40).optional() });
+const Col = z.object({ id: z.string(), title: z.string().trim().min(1).max(60), type: z.enum(COLUMN_TYPES), width: z.number().min(80).max(600).optional(), options: z.array(Opt).max(40).optional(), relationBoard: z.string().optional() });
+const View = z.object({
+  id: z.string().max(40), name: z.string().trim().min(1).max(60), type: z.enum(["table", "kanban", "calendar"]),
+  filters: z.array(z.object({ column: z.string(), op: z.string(), value: z.unknown().optional() })).max(20).default([]),
+  match: z.enum(["all", "any"]).default("all"),
+  sort: z.object({ column: z.string().default(""), dir: z.enum(["asc", "desc"]).default("asc") }).default({ column: "", dir: "asc" }),
+  hidden: z.array(z.string()).max(60).default([]),
+  kanbanColumn: z.string().default(""), dateColumn: z.string().default(""),
+});
 const Grp = z.object({ id: z.string(), title: z.string().trim().min(1).max(60), color: z.string(), collapsed: z.boolean().optional() });
 const Patch = z.object({
   name: z.string().trim().min(1).max(80).optional(),
@@ -24,6 +32,7 @@ const Patch = z.object({
   columns: z.array(Col).max(40).optional(),
   groups: z.array(Grp).min(1).max(30).optional(),
   kanbanColumn: z.string().optional(),
+  views: z.array(View).max(30).optional(),
 });
 
 export const PATCH = route<P>(async (req, ctx, { id }) => {

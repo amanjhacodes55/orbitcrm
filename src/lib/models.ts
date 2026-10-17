@@ -32,12 +32,19 @@ WorkspaceSchema.index({ "members.user": 1 });
 export const Workspace = m("Workspace", WorkspaceSchema);
 
 // ---------- boards ----------
-export const COLUMN_TYPES = ["text", "status", "person", "date", "number", "currency", "email", "phone", "dropdown", "checkbox", "link", "rating"] as const;
+export const COLUMN_TYPES = ["text", "status", "person", "date", "number", "currency", "email", "phone", "dropdown", "checkbox", "link", "rating", "relation"] as const;
 export type ColumnType = (typeof COLUMN_TYPES)[number];
 
 const OptionSchema = new Schema({ id: { type: String, required: true }, label: { type: String, required: true }, color: { type: String, required: true } }, { _id: false });
 const ColumnSchema = new Schema(
-  { id: { type: String, required: true }, title: { type: String, required: true }, type: { type: String, enum: COLUMN_TYPES, required: true }, width: { type: Number, default: 150 }, options: { type: [OptionSchema], default: [] } },
+  {
+    id: { type: String, required: true },
+    title: { type: String, required: true },
+    type: { type: String, enum: COLUMN_TYPES, required: true },
+    width: { type: Number, default: 150 },
+    options: { type: [OptionSchema], default: [] },
+    relationBoard: { type: String, default: "" }, // for "relation" columns: the linked board id
+  },
   { _id: false }
 );
 const GroupSchema = new Schema({ id: String, title: String, color: String, collapsed: { type: Boolean, default: false } }, { _id: false });
@@ -53,6 +60,23 @@ const BoardSchema = new Schema(
     columns: { type: [ColumnSchema], default: [] },
     groups: { type: [GroupSchema], default: [] },
     kanbanColumn: { type: String, default: "" }, // status column used by the kanban view
+    views: {
+      type: [
+        {
+          _id: false,
+          id: String,
+          name: String,
+          type: { type: String, enum: ["table", "kanban", "calendar"], default: "table" },
+          filters: { type: [{ _id: false, column: String, op: String, value: Schema.Types.Mixed }], default: [] },
+          match: { type: String, enum: ["all", "any"], default: "all" },
+          sort: { column: { type: String, default: "" }, dir: { type: String, default: "asc" } },
+          hidden: { type: [String], default: [] },
+          kanbanColumn: { type: String, default: "" },
+          dateColumn: { type: String, default: "" },
+        },
+      ],
+      default: [],
+    },
     position: { type: Number, default: 0 },
   },
   opts
@@ -81,7 +105,10 @@ const ActivitySchema = new Schema(
     workspace: { type: Schema.Types.ObjectId, ref: "Workspace", required: true },
     board: { type: Schema.Types.ObjectId, ref: "Board" },
     item: { type: Schema.Types.ObjectId, ref: "Item", index: true },
-    type: { type: String, enum: ["created", "update", "note", "call", "email", "automation", "app"], required: true },
+    type: { type: String, enum: ["created", "update", "note", "call", "email", "automation", "app", "task", "message"], required: true },
+    due: { type: Date }, // tasks
+    done: { type: Boolean, default: false }, // tasks
+    assignee: { type: Schema.Types.ObjectId, ref: "User" }, // tasks
     actor: { type: Schema.Types.ObjectId, ref: "User" },
     actorLabel: { type: String, default: "" }, // e.g. "Automation", "Softphone app"
     text: { type: String, default: "" },
@@ -90,6 +117,7 @@ const ActivitySchema = new Schema(
   opts
 );
 ActivitySchema.index({ workspace: 1, createdAt: -1 });
+ActivitySchema.index({ workspace: 1, type: 1, done: 1, due: 1 });
 export const Activity = m("Activity", ActivitySchema);
 
 // ---------- automation & integrations ----------
@@ -229,5 +257,67 @@ const NotificationSchema = new Schema(
 );
 NotificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 30 * 24 * 3600 });
 export const Notification = m("Notification", NotificationSchema);
+
+// ---------- channels / inbox ----------
+export const CHANNEL_TYPES = ["webchat", "email", "sms", "whatsapp", "custom"] as const;
+const ChannelSchema = new Schema(
+  {
+    workspace: { type: Schema.Types.ObjectId, ref: "Workspace", required: true, index: true },
+    type: { type: String, enum: CHANNEL_TYPES, required: true },
+    name: { type: String, required: true, maxlength: 60 },
+    token: { type: String, required: true, unique: true }, // public id used in widget / inbound URLs
+    active: { type: Boolean, default: true },
+    settings: {
+      color: { type: String, default: "#6161ff" },
+      greeting: { type: String, default: "Hi! 👋 How can we help you today?" },
+      leadBoard: { type: String, default: "" }, // board where new contacts become items
+      autoCreateLead: { type: Boolean, default: true },
+      outboundWebhookUrl: { type: String, default: "" }, // sms/whatsapp/custom: we POST replies here
+      fromEmail: { type: String, default: "" },
+      twilioSid: { type: String, default: "" },
+      twilioFrom: { type: String, default: "" },
+    },
+    twilioToken: { type: String, select: false, default: "" },
+    signingSecret: { type: String, select: false },
+  },
+  opts
+);
+export const Channel = m("Channel", ChannelSchema);
+
+const ConversationSchema = new Schema(
+  {
+    workspace: { type: Schema.Types.ObjectId, ref: "Workspace", required: true },
+    channel: { type: Schema.Types.ObjectId, ref: "Channel", required: true },
+    contact: { name: { type: String, default: "" }, email: { type: String, default: "" }, phone: { type: String, default: "" }, key: { type: String, default: "" } },
+    subject: { type: String, default: "" },
+    item: { type: Schema.Types.ObjectId, ref: "Item" },
+    board: { type: Schema.Types.ObjectId, ref: "Board" },
+    status: { type: String, enum: ["open", "pending", "closed"], default: "open" },
+    assignee: { type: Schema.Types.ObjectId, ref: "User" },
+    lastMessage: { type: String, default: "" },
+    lastMessageAt: { type: Date, default: Date.now },
+    unread: { type: Number, default: 0 },
+    visitorTokenHash: { type: String, select: false }, // webchat visitor session
+  },
+  opts
+);
+ConversationSchema.index({ workspace: 1, status: 1, lastMessageAt: -1 });
+ConversationSchema.index({ channel: 1, "contact.key": 1 });
+export const Conversation = m("Conversation", ConversationSchema);
+
+const MessageSchema = new Schema(
+  {
+    workspace: { type: Schema.Types.ObjectId, ref: "Workspace", required: true },
+    conversation: { type: Schema.Types.ObjectId, ref: "Conversation", required: true },
+    direction: { type: String, enum: ["in", "out", "note"], required: true },
+    author: { type: Schema.Types.ObjectId, ref: "User" },
+    authorLabel: { type: String, default: "" },
+    text: { type: String, required: true, maxlength: 10000 },
+    delivery: { type: String, default: "" }, // sent | failed: reason | stored
+  },
+  opts
+);
+MessageSchema.index({ conversation: 1, createdAt: 1 });
+export const Message = m("Message", MessageSchema);
 
 export { Types };

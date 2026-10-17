@@ -14,8 +14,8 @@ type Action = { type: string; config: Record<string, unknown> };
 type Auto = { _id?: string; board: string; name: string; enabled: boolean; trigger: { type: string; config: Record<string, unknown> }; conditions: { column: string; op: string; value?: unknown }[]; actions: Action[]; hookToken?: string; runCount?: number; lastRunAt?: string };
 type Run = { _id: string; status: string; createdAt: string; durationMs: number; steps: { action: string; ok: boolean; detail: string }[] };
 
-const TRIG: Record<string, string> = { item_created: "When an item is created", column_changed: "When a column changes", catch_hook: "When a webhook is received (catch hook)", app_trigger: "When an app fires a trigger" };
-const ACT: Record<string, string> = { set_column: "Set a column value", move_to_group: "Move item to group", create_item: "Create an item", add_note: "Add a note / update", notify: "Notify someone", send_webhook: "Send a webhook (HTTP request)", app_action: "Run an app action" };
+const TRIG: Record<string, string> = { item_created: "When an item is created", column_changed: "When a column changes", catch_hook: "When a webhook is received (catch hook)", app_trigger: "When an app fires a trigger", message_received: "When a message arrives in the Inbox" };
+const ACT: Record<string, string> = { set_column: "Set a column value", move_to_group: "Move item to group", create_item: "Create an item", add_note: "Add a note / update", notify: "Notify someone", send_webhook: "Send a webhook (HTTP request)", app_action: "Run an app action", reply_message: "Reply to the conversation (Inbox)" };
 const OPS: Record<string, string> = { equals: "is", not_equals: "is not", contains: "contains", is_empty: "is empty", not_empty: "is not empty", gt: ">", lt: "<" };
 
 function describeTrigger(a: Auto, b: BoardS | undefined, apps: AppI[]) {
@@ -32,7 +32,8 @@ function describeTrigger(a: Auto, b: BoardS | undefined, apps: AppI[]) {
   return TRIG[a.trigger.type];
 }
 
-export default function Automations({ boards, initial, apps, members, origin }: { boards: BoardS[]; initial: Auto[]; apps: AppI[]; members: Member[]; origin: string }) {
+type ChanI = { id: string; name: string };
+export default function Automations({ boards, initial, apps, members, origin, channels = [] }: { boards: BoardS[]; initial: Auto[]; apps: AppI[]; members: Member[]; origin: string; channels?: ChanI[] }) {
   const router = useRouter();
   const sp = useSearchParams();
   const toast = useToast();
@@ -112,7 +113,7 @@ export default function Automations({ boards, initial, apps, members, origin }: 
           );
         })}
       </div>
-      {edit && <Builder initial={edit} boards={boards} apps={apps} members={members} onClose={() => setEdit(null)} onSaved={(a) => { setAutos((xs) => (xs.some((x) => x._id === a._id) ? xs.map((x) => (x._id === a._id ? a : x)) : [a, ...xs])); setEdit(null); router.refresh(); }} />}
+      {edit && <Builder initial={edit} boards={boards} apps={apps} members={members} channels={channels} onClose={() => setEdit(null)} onSaved={(a) => { setAutos((xs) => (xs.some((x) => x._id === a._id) ? xs.map((x) => (x._id === a._id ? a : x)) : [a, ...xs])); setEdit(null); router.refresh(); }} />}
       <Modal open={!!runsOf} onClose={() => setRunsOf(null)} title={`Run history — ${runsOf?.name}`} wide>
         {!runs ? <p className="text-sm text-muted">Loading…</p> : runs.length === 0 ? <p className="text-sm text-muted">No runs in the last 14 days.</p> : (
           <div className="space-y-2">
@@ -174,7 +175,7 @@ function ValueInput({ col, value, onChange, members, allowTemplate = true }: { c
   return <input className="input" value={String(value ?? "")} onChange={(e) => onChange(e.target.value)} placeholder={allowTemplate ? (col?.type === "date" ? "{{today}} or 2026-11-01" : "Value or {{template}}") : "Value"} />;
 }
 
-function Builder({ initial, boards, apps, members, onClose, onSaved }: { initial: Auto; boards: BoardS[]; apps: AppI[]; members: Member[]; onClose: () => void; onSaved: (a: Auto) => void }) {
+function Builder({ initial, boards, apps, members, channels, onClose, onSaved }: { initial: Auto; boards: BoardS[]; apps: AppI[]; members: Member[]; channels: ChanI[]; onClose: () => void; onSaved: (a: Auto) => void }) {
   const toast = useToast();
   const [a, setA] = useState<Auto>(initial);
   const [busy, setBusy] = useState(false);
@@ -236,6 +237,19 @@ function Builder({ initial, boards, apps, members, onClose, onSaved }: { initial
             </div>
           )}
           {a.trigger.type === "catch_hook" && <p className="mt-2 text-xs text-muted">After saving you&apos;ll get a unique URL. Every POST to it runs this automation with the JSON body available as <code>{"{{payload.*}}"}</code>. Start the actions with “Create an item”.</p>}
+          {a.trigger.type === "message_received" && (
+            <div className="mt-3 grid gap-3 sm:grid-cols-2">
+              <div><label className="label">Channel</label>
+                <select className="input" value={String(a.trigger.config.channel || "")} onChange={(e) => setTrig({ channel: e.target.value })}>
+                  <option value="">Any channel</option>
+                  {channels.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div><label className="label">Message contains (optional)</label><input className="input" value={String(a.trigger.config.contains || "")} onChange={(e) => setTrig({ contains: e.target.value })} placeholder="e.g. pricing" /></div>
+              <label className="flex items-center gap-2 text-sm sm:col-span-2"><input type="checkbox" className="accent-[var(--brand)]" checked={!!a.trigger.config.onlyNew} onChange={(e) => setTrig({ onlyNew: e.target.checked })} /> Only the first message of a new conversation</label>
+              <p className="text-xs text-faint sm:col-span-2">Runs on the linked lead (if any). Variables: <code>{"{{payload.text}}"}</code> <code>{"{{payload.contact.name}}"}</code> <code>{"{{payload.channel}}"}</code>. Choose the board that the channel creates leads in.</p>
+            </div>
+          )}
           {a.trigger.type === "app_trigger" && (
             <div className="mt-3">
               {appTriggers.length === 0 ? <p className="text-xs text-muted">None of your installed apps declare triggers. Install one from the Marketplace (e.g. Softphone → “Call ended”).</p> : (
@@ -329,6 +343,7 @@ function Builder({ initial, boards, apps, members, onClose, onSaved }: { initial
                       </div>
                     </>
                   )}
+                  {x.type === "reply_message" && <textarea className="input min-h-20" value={String(x.config.text || "")} onChange={(e) => setActCfg(i, { text: e.target.value })} placeholder="Hi {{payload.contact.name}}, thanks for reaching out! A teammate will reply within an hour." />}
                   {x.type === "add_note" && <textarea className="input min-h-20" value={String(x.config.text || "")} onChange={(e) => setActCfg(i, { text: e.target.value })} placeholder="Note text — {{item.name}} …" />}
                   {x.type === "notify" && (
                     <>
@@ -383,7 +398,7 @@ function Builder({ initial, boards, apps, members, onClose, onSaved }: { initial
                       )}
                     </>
                   )}
-                  {["set_column", "create_item", "add_note", "notify", "send_webhook", "app_action"].includes(x.type) && <TemplateHint board={board} catchHook={a.trigger.type === "catch_hook" || a.trigger.type === "app_trigger"} />}
+                  {["set_column", "create_item", "add_note", "notify", "send_webhook", "app_action", "reply_message"].includes(x.type) && <TemplateHint board={board} catchHook={["catch_hook", "app_trigger", "message_received"].includes(a.trigger.type)} />}
                 </div>
               </section>
             </div>
