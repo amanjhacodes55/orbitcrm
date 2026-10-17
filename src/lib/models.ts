@@ -315,6 +315,9 @@ const MessageSchema = new Schema(
     authorLabel: { type: String, default: "" },
     text: { type: String, required: true, maxlength: 10000 },
     delivery: { type: String, default: "" }, // sent | failed: reason | stored
+    subject: { type: String, default: "" }, // email only
+    to: { type: String, default: "" },
+    cc: { type: String, default: "" },
   },
   opts
 );

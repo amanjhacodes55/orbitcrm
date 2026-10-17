@@ -42,6 +42,10 @@
 
 ---
 
+### Email compose & threads
+
+Open any lead/contact → **Email** to write an email (To prefilled, Cc, subject, templates with `{{first_name}}`, `{{name}}`, `{{company}}`, `{{me}}`). Every email becomes a thread on the item's **Emails** tab and in the **Inbox** ("New email"), with inline replies; inbound replies to the Email channel land in the same thread. Delivery uses `SMTP_URL` (e.g. `smtps://user:app-password@smtp.gmail.com:465`) — without it emails are saved and marked *Not sent* with a mail-app fallback.
+
 ## Why OrbitCRM
 
 Most teams end up stitching together a CRM, a chat tool, a dialer and an automation service like Zapier. OrbitCRM puts all of these in one place, and every part can be reached from outside:

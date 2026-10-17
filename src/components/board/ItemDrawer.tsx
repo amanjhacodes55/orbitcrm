@@ -7,6 +7,8 @@ import { useToast } from "@/components/Toast";
 import { Avatar, timeAgo } from "@/components/ui";
 import { useDialer } from "@/components/Dialer";
 import AppFrame from "@/components/AppFrame";
+import EmailComposer from "@/components/EmailComposer";
+import EmailThreads from "./EmailThreads";
 import Cell from "./Cell";
 import { displayValue } from "@/lib/values";
 import type { BoardT, ItemT, Member, PanelApp } from "./types";
@@ -19,7 +21,9 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
 }) {
   const toast = useToast();
   const dial = useDialer();
-  const [tab, setTab] = useState<"activity" | "tasks" | "apps">("activity");
+  const [tab, setTab] = useState<"activity" | "emails" | "tasks" | "apps">("activity");
+  const [compose, setCompose] = useState(false);
+  const [mailRev, setMailRev] = useState(0);
   const [task, setTask] = useState({ text: "", due: "", assignee: String(user.id || "") });
   const [acts, setActs] = useState<Act[] | null>(null);
   const [note, setNote] = useState("");
@@ -101,11 +105,9 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
               <Phone className="size-3.5" /> Call
             </button>
           )}
-          {email && (
-            <a href={`mailto:${email}`} className="btn btn-secondary btn-sm">
-              <Mail className="size-3.5" /> Email
-            </a>
-          )}
+          <button onClick={() => setCompose(true)} className="btn btn-secondary btn-sm">
+            <Mail className="size-3.5" /> Email
+          </button>
           <button onClick={() => confirm(`Delete “${item.name}”?`) && onDelete()} className="btn btn-ghost btn-sm !p-2 hover:!text-danger" aria-label="Delete">
             <Trash2 className="size-4" />
           </button>
@@ -125,14 +127,16 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
             ))}
           </div>
           <div className="flex gap-1 border-b border-border px-4">
-            {(["activity", "tasks", "apps"] as const).map((t) => (
+            {(["activity", "emails", "tasks", "apps"] as const).map((t) => (
               <button key={t} onClick={() => setTab(t)} className={clsx("relative px-3 py-2.5 text-sm font-medium", tab === t ? "text-text" : "text-muted")}>
-                {t === "activity" ? "Activity" : t === "tasks" ? `Tasks (${tasks.filter((x) => !x.done).length})` : `Apps (${panelApps.length})`}
+                {t === "activity" ? "Activity" : t === "emails" ? "Emails" : t === "tasks" ? `Tasks (${tasks.filter((x) => !x.done).length})` : `Apps (${panelApps.length})`}
                 {tab === t && <span className="absolute inset-x-2 -bottom-px h-0.5 rounded bg-brand" />}
               </button>
             ))}
           </div>
-          {tab === "tasks" ? (
+          {tab === "emails" ? (
+            <EmailThreads itemId={item._id} refresh={mailRev} onCompose={() => setCompose(true)} />
+          ) : tab === "tasks" ? (
             <div className="space-y-3 p-5">
               <div className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-[1fr_140px_150px_auto]">
                 <input className="input" placeholder="Task, e.g. Send proposal" value={task.text} onChange={(e) => setTask({ ...task, text: e.target.value })} onKeyDown={(e) => e.key === "Enter" && addTask()} />
@@ -176,8 +180,8 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
               <ol className="relative space-y-4 border-l border-border pl-5">
                 {timeline.map((a) => (
                   <li key={a._id} className="relative">
-                    <span className={clsx("absolute -left-[31px] flex size-5 items-center justify-center rounded-full text-white", a.type === "call" ? "bg-success" : a.type === "note" ? "bg-brand" : a.type === "update" ? "bg-warn" : a.type === "email" ? "bg-[#579bfc]" : "bg-faint")}>
-                      {a.type === "call" ? <Phone className="size-3" /> : a.type === "note" ? <MessageSquare className="size-3" /> : a.type === "update" ? <RefreshCw className="size-3" /> : a.type === "created" ? <PlusCircle className="size-3" /> : <Zap className="size-3" />}
+                    <span className={clsx("absolute -left-[31px] flex size-5 items-center justify-center rounded-full text-white", a.type === "call" ? "bg-success" : a.type === "note" ? "bg-brand" : a.type === "update" ? "bg-warn" : a.type === "email" || a.data?.channel === "email" ? "bg-[#579bfc]" : "bg-faint")}>
+                      {a.type === "call" ? <Phone className="size-3" /> : a.type === "note" ? <MessageSquare className="size-3" /> : a.type === "update" ? <RefreshCw className="size-3" /> : a.type === "created" ? <PlusCircle className="size-3" /> : a.data?.channel === "email" ? <Mail className="size-3" /> : <Zap className="size-3" />}
                     </span>
                     <div className="flex items-center gap-2 text-xs text-muted">
                       {a.actor ? <Avatar name={a.actor.name} image={a.actor.image} size={18} /> : a.actorLabel ? <Bot className="size-4" /> : null}
@@ -224,6 +228,18 @@ export default function ItemDrawer({ board, item, members, panelApps, user, work
           )}
         </div>
       </aside>
+      {compose && (
+        <div onMouseDown={(e) => e.stopPropagation()}>
+          <EmailComposer
+            to={email}
+            name={item.name}
+            itemId={item._id}
+            vars={{ me: String(user.name || ""), company: String(item.values[board.columns.find((c) => c.title.toLowerCase() === "company")?.id || ""] ?? "") || item.name }}
+            onClose={() => setCompose(false)}
+            onSent={() => { setTab("emails"); setMailRev((n) => n + 1); load(); }}
+          />
+        </div>
+      )}
     </div>
   );
 }

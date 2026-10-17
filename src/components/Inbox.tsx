@@ -7,6 +7,7 @@ import { CheckCircle2, Globe, Lock, Mail, MessageCircle, MessagesSquare, Phone, 
 import { api } from "@/lib/client";
 import { useToast } from "@/components/Toast";
 import { Avatar, Empty, timeAgo } from "@/components/ui";
+import EmailComposer from "@/components/EmailComposer";
 
 type Ch = { _id: string; name: string; type: string; active: boolean };
 type Conv = { _id: string; channel: { _id: string; name: string; type: string }; contact: { name: string; email: string; phone: string }; subject: string; status: string; assignee?: { _id: string; name: string; image?: string } | null; lastMessage: string; lastMessageAt: string; unread: number; item?: string };
@@ -31,6 +32,7 @@ export default function Inbox({ channels, members, me, canAdmin }: { channels: C
   const [text, setText] = useState("");
   const [note, setNote] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [compose, setCompose] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   const loadList = useCallback(async () => {
@@ -81,7 +83,7 @@ export default function Inbox({ channels, members, me, canAdmin }: { channels: C
       {/* list */}
       <div className={clsx("flex w-full flex-col border-r border-border bg-surface md:w-80", sel && "hidden md:flex")}>
         <div className="space-y-2 border-b border-border p-3">
-          <div className="flex items-center justify-between"><h1 className="text-lg font-bold">Inbox</h1>{canAdmin && <Link href="/app/settings?tab=channels" className="btn btn-ghost btn-sm"><Plus className="size-3.5" /> Channel</Link>}</div>
+          <div className="flex items-center justify-between"><h1 className="text-lg font-bold">Inbox</h1><div className="flex gap-1"><button className="btn btn-primary btn-sm" onClick={() => setCompose(true)}><Mail className="size-3.5" /> New email</button>{canAdmin && <Link href="/app/settings?tab=channels" className="btn btn-ghost btn-sm" aria-label="Add channel"><Plus className="size-3.5" /></Link>}</div></div>
           <div className="relative"><Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-faint" /><input className="input !py-1.5 !pl-8" placeholder="Search conversations" value={q} onChange={(e) => setQ(e.target.value)} /></div>
           <div className="flex gap-1">
             {["open", "pending", "closed", "all"].map((s) => (
@@ -183,6 +185,7 @@ export default function Inbox({ channels, members, me, canAdmin }: { channels: C
           </aside>
         </>
       )}
+    {compose && <EmailComposer vars={{ me: members.find((m) => m.id === me)?.name || "" }} onClose={() => setCompose(false)} onSent={(id) => { setStatus("all"); open(id); loadList(); }} />}
     </div>
   );
 }

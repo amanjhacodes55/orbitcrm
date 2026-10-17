@@ -3,6 +3,7 @@ import { Activity, Board, Channel, Conversation, Item, Message, Notification, Wo
 import { createItem } from "@/lib/items";
 import { outboundFetch } from "@/lib/outbound";
 import { sign } from "@/lib/events";
+import { token } from "@/lib/ids";
 
 type ChannelDoc = { _id: unknown; workspace: unknown; type: string; name: string; settings: Record<string, unknown> };
 export type Inbound = { name?: string; email?: string; phone?: string; text: string; subject?: string; key?: string };
@@ -76,18 +77,19 @@ export async function ingestInbound(ch: ChannelDoc, msg: Inbound, convId?: strin
 }
 
 /** Deliver an agent (or automation) reply through the conversation's channel. */
-export async function sendReply(convId: string, text: string, by: { userId?: string; label: string }) {
+export async function sendReply(convId: string, text: string, by: { userId?: string; label: string }, opts: { cc?: string } = {}) {
   const conv = await Conversation.findById(convId);
   if (!conv) throw new Error("Conversation not found");
   const ch = await Channel.findById(conv.channel).select("+twilioToken +signingSecret").lean();
   if (!ch) throw new Error("Channel not found");
   let delivery = "stored";
   try {
-    delivery = await deliver(ch as never, conv.toObject() as never, text);
+    delivery = await deliver(ch as never, conv.toObject() as never, text, { cc: opts.cc });
   } catch (e) {
     delivery = `failed: ${e instanceof Error ? e.message : String(e)}`;
   }
-  const m = await Message.create({ workspace: conv.workspace, conversation: conv._id, direction: "out", author: by.userId, authorLabel: by.label, text, delivery });
+  const isEmail = ch.type === "email";
+  const m = await Message.create({ workspace: conv.workspace, conversation: conv._id, direction: "out", author: by.userId, authorLabel: by.label, text, delivery, ...(isEmail ? { subject: conv.subject ? `Re: ${conv.subject.replace(/^re:\s*/i, "")}` : "", to: conv.contact?.email || "", cc: opts.cc || "" } : {}) });
   conv.lastMessage = text.slice(0, 200);
   conv.lastMessageAt = new Date();
   conv.unread = 0;
@@ -97,7 +99,7 @@ export async function sendReply(convId: string, text: string, by: { userId?: str
   return m;
 }
 
-async function deliver(ch: ChannelDoc & { twilioToken?: string; signingSecret?: string }, conv: { contact: { email?: string; phone?: string; name?: string }; subject?: string; _id: unknown }, text: string) {
+async function deliver(ch: ChannelDoc & { twilioToken?: string; signingSecret?: string }, conv: { contact: { email?: string; phone?: string; name?: string }; subject?: string; _id: unknown }, text: string, mail: { subject?: string; cc?: string } = {}) {
   if (ch.type === "webchat") return "sent"; // the visitor's widget polls for new messages
   const s = ch.settings as Record<string, string>;
   if (ch.type === "email") {
@@ -105,7 +107,7 @@ async function deliver(ch: ChannelDoc & { twilioToken?: string; signingSecret?: 
     if (!process.env.SMTP_URL) throw new Error("SMTP not configured (set SMTP_URL)");
     const nodemailer = await import("nodemailer");
     const t = nodemailer.createTransport(process.env.SMTP_URL);
-    await t.sendMail({ from: s.fromEmail || process.env.SMTP_FROM || "OrbitCRM <no-reply@orbitcrm.local>", to: conv.contact.email, subject: conv.subject ? `Re: ${conv.subject}` : "Re: your message", text });
+    await t.sendMail({ from: s.fromEmail || process.env.SMTP_FROM || "OrbitCRM <no-reply@orbitcrm.local>", to: conv.contact.email, cc: mail.cc || undefined, subject: mail.subject || (conv.subject ? `Re: ${conv.subject.replace(/^re:\s*/i, "")}` : "Re: your message"), text });
     return "sent";
   }
   if ((ch.type === "sms" || ch.type === "whatsapp") && s.twilioSid && ch.twilioToken && s.twilioFrom) {
@@ -123,4 +125,31 @@ async function deliver(ch: ChannelDoc & { twilioToken?: string; signingSecret?: 
     return "sent";
   }
   throw new Error("No outbound delivery configured for this channel (add Twilio credentials or an outbound webhook URL)");
+}
+
+/** The workspace's email channel — created on first use so "Send email" works out of the box. */
+export async function emailChannel(workspace: string, leadBoard = "") {
+  const ch = await Channel.findOne({ workspace, type: "email", active: true }).sort({ createdAt: 1 }).lean();
+  if (ch) return ch;
+  return (await Channel.create({ workspace, type: "email", name: "Email", token: token("ch", 12), signingSecret: token("chsec", 18), settings: { leadBoard, autoCreateLead: false } })).toObject();
+}
+
+/** Start a new email thread (or continue one) from the CRM. Always stored; delivered when SMTP is configured. */
+export async function sendEmail(o: { workspace: string; to: string; cc?: string; subject: string; text: string; name?: string; item?: { _id: unknown; board: unknown } | null; by: { userId?: string; label: string } }) {
+  const ch = await emailChannel(o.workspace, o.item ? String(o.item.board) : "");
+  const to = norm(o.to).toLowerCase();
+  const conv = new Conversation({ workspace: o.workspace, channel: ch._id, contact: { name: norm(o.name), email: to, key: to }, subject: norm(o.subject).slice(0, 200), status: "pending" });
+  if (o.item) { conv.item = o.item._id as never; conv.board = o.item.board as never; }
+  let delivery = "stored";
+  try {
+    delivery = await deliver(ch as never, { contact: { email: to }, subject: conv.subject, _id: conv._id }, o.text, { subject: conv.subject || "(no subject)", cc: o.cc });
+  } catch (e) {
+    delivery = `failed: ${e instanceof Error ? e.message : String(e)}`;
+  }
+  conv.lastMessage = o.text.slice(0, 200);
+  conv.lastMessageAt = new Date();
+  await conv.save();
+  const m = await Message.create({ workspace: o.workspace, conversation: conv._id, direction: "out", author: o.by.userId, authorLabel: o.by.label, text: o.text, delivery, subject: conv.subject, to, cc: norm(o.cc) });
+  await logOnItem(conv, `✉️ ${conv.subject || "(no subject)"}\n\n${o.text}`, { channel: "email", direction: "out", conversation: String(conv._id), subject: conv.subject }, "", o.by.userId);
+  return { conv, message: m };
 }
