@@ -55,10 +55,12 @@ export default function BoardView({ initialBoard, initialItems, members, panelAp
   const view = views.find((v) => v.id === viewId) || views[0];
   const pickView = (id: string) => { setViewId(id); setSelected(new Set()); try { localStorage.setItem(`orbit-view2:${board._id}`, id); } catch {} };
 
+  // Shallow URL update (no server round-trip): instant open/close, no race between overlapping navigations,
+  // and the board's local state isn't reset by a server re-render.
   const setOpen = (id: string | null) => {
-    const u = new URLSearchParams(sp.toString());
+    const u = new URLSearchParams(window.location.search);
     if (id) u.set("item", id); else u.delete("item");
-    router.replace(`${path}${u.size ? "?" + u : ""}`, { scroll: false });
+    window.history.replaceState(null, "", `${path}${u.size ? "?" + u : ""}`);
   };
 
   const refresh = useCallback(async () => {
@@ -175,7 +177,7 @@ export default function BoardView({ initialBoard, initialItems, members, panelAp
       <div className="border-b border-border bg-surface px-4 pt-4 md:px-6">
         <div className="flex flex-wrap items-center gap-2">
           <input defaultValue={board.icon} key={`i${board.icon}`} maxLength={4} onBlur={(e) => e.target.value && e.target.value !== board.icon && saveBoard({ icon: e.target.value })} className="w-10 rounded bg-transparent text-center text-2xl outline-none focus:ring-2 focus:ring-brand/40" aria-label="Board icon" />
-          <input defaultValue={board.name} key={`n${board.name}`} onBlur={(e) => e.target.value.trim() && e.target.value !== board.name && saveBoard({ name: e.target.value.trim() })} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} className="min-w-0 flex-1 rounded bg-transparent text-2xl font-bold outline-none focus:ring-2 focus:ring-brand/40" aria-label="Board name" />
+          <input defaultValue={board.name} key={`n${board.name}`} onBlur={(e) => e.target.value.trim() && e.target.value !== board.name && saveBoard({ name: e.target.value.trim() })} onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()} className="min-w-[12rem] flex-1 rounded bg-transparent text-2xl font-bold outline-none focus:ring-2 focus:ring-brand/40" aria-label="Board name" />
           <Link href={`/app/automations?board=${board._id}`} className="btn btn-secondary btn-sm"><Workflow className="size-3.5" /> Automate</Link>
           <button onClick={() => setImportOpen(true)} className="btn btn-ghost btn-sm" title="Import CSV"><Upload className="size-3.5" /> Import</button>
           <button onClick={exportCsv} className="btn btn-ghost btn-sm" title="Export this view as CSV"><Download className="size-3.5" /> Export</button>

@@ -292,7 +292,11 @@ docker build -t orbitcrm .
 docker run -p 3001:3001 -e MONGODB_URI=… -e NEXTAUTH_SECRET=… -e NEXTAUTH_URL=https://crm.example.com orbitcrm
 ```
 
-**Render (free tier):** New → Web Service → this repo → *Docker*. Add `MONGODB_URI` (a free Atlas M0 cluster works), `NEXTAUTH_SECRET` and `ADMIN_EMAILS`. `NEXTAUTH_URL` defaults to Render's public URL.
+**Render (free tier), one click:** Dashboard → **New → Blueprint** → select this repo. `render.yaml` sets up a Docker web service with a health check at `/api/health` and an auto-generated `NEXTAUTH_SECRET`, and asks you for:
+- `MONGODB_URI`: a free MongoDB Atlas M0 cluster works. Allow `0.0.0.0/0` in Atlas Network Access.
+- `ADMIN_EMAILS`: your email, so you can review marketplace apps.
+
+`NEXTAUTH_URL` defaults to Render's public URL. The image uses Next.js **standalone output**: a minimal server bundle that builds in about 2 minutes and starts in under 100 ms, which helps with the free tier's cold starts.
 
 ## Project structure
 

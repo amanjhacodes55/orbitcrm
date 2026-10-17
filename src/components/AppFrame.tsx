@@ -34,7 +34,16 @@ export default function AppFrame({
   const toast = useToast();
   const ctxRef = useRef(context);
   ctxRef.current = context;
-  const src = `${url}${url.includes("?") ? "&" : "?"}installation=${installationId}&surface=${surface}`;
+  // Tell embedded apps which theme is active so they can match it (and reload them when it changes).
+  const [theme, setTheme] = useState({ id: "light", mode: "light", brand: "" });
+  useEffect(() => {
+    const read = () => setTheme({ id: document.documentElement.dataset.theme || "light", mode: document.documentElement.dataset.mode || "light", brand: getComputedStyle(document.documentElement).getPropertyValue("--brand").trim() });
+    read();
+    window.addEventListener("orbit:theme", read);
+    return () => window.removeEventListener("orbit:theme", read);
+  }, []);
+  const brand = theme.brand;
+  const src = `${url}${url.includes("?") ? "&" : "?"}installation=${installationId}&surface=${surface}&theme=${theme.id}&mode=${theme.mode}${brand ? `&brand=${encodeURIComponent(brand)}` : ""}`;
 
   useEffect(() => {
     const onMsg = async (e: MessageEvent) => {
@@ -45,12 +54,12 @@ export default function AppFrame({
       switch (m.method) {
         case "getContext":
           setReady(true);
-          return reply({ ...ctxRef.current, installationId, surface });
+          return reply({ ...ctxRef.current, installationId, surface, theme: theme.id, mode: theme.mode });
         case "toast":
           toast(String(m.params?.text || ""), "info");
           return reply({ ok: true });
         case "resize":
-          setH(Math.max(120, Math.min(1200, Number(m.params?.height) || height)));
+          setH(Math.max(80, Math.min(1400, Number(m.params?.height) || height)));
           return reply({ ok: true });
         case "close":
           onClose?.();
@@ -64,7 +73,7 @@ export default function AppFrame({
     };
     window.addEventListener("message", onMsg);
     return () => window.removeEventListener("message", onMsg);
-  }, [installationId, surface, toast, onClose, onChanged, height]);
+  }, [installationId, surface, toast, onClose, onChanged, height, theme]);
 
   useEffect(() => {
     if (ready && hostEvent) ref.current?.contentWindow?.postMessage({ orbit: 1, event: hostEvent.event, data: hostEvent.data }, "*");
@@ -72,10 +81,11 @@ export default function AppFrame({
 
   return (
     <iframe
+      key={theme.id}
       ref={ref}
       src={src}
       title={`${surface} app`}
-      className="w-full rounded-md border-0 bg-white"
+      className="w-full rounded-md border-0 bg-surface"
       style={{ height: h }}
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
       allow="microphone; autoplay; clipboard-write"

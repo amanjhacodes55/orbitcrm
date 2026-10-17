@@ -97,7 +97,7 @@ export async function seedSampleData(workspace: string, userId: string) {
 
   const stages = ["Discovery", "Proposal", "Negotiation", "Won", "Proposal", "Lost"];
   const dealNames = ["FinEdge – CRM rollout", "CloudNest – annual plan", "RetailKart – 50 seats", "HealthPlus – pilot", "GrowthLabs – upgrade", "DataWise – integrations"];
-  await Item.insertMany(
+  const createdDeals = await Item.insertMany(
     dealNames.map((name, i) => ({
       workspace, board: deals._id, group: deals.groups[stages[i] === "Won" || stages[i] === "Lost" ? 1 : 0].id, name, position: i, createdBy: userId, source: "sample",
       values: {
@@ -111,12 +111,13 @@ export async function seedSampleData(workspace: string, userId: string) {
       },
     }))
   );
-  await Item.insertMany(
+  const createdContacts = await Item.insertMany(
     people.slice(0, 6).map(([name, email, phone, company], i) => ({
       workspace, board: contacts._id, group: contacts.groups[0].id, name, position: i, createdBy: userId, source: "sample",
       values: { [col(contacts, "Type").id]: optId(contacts, "Type", ["Customer", "Prospect", "Customer", "Partner", "Prospect", "Customer"][i]), [col(contacts, "Email").id]: email, [col(contacts, "Phone").id]: phone, [col(contacts, "Company").id]: company, [col(contacts, "Subscribed").id]: i % 2 === 0 },
     }))
   );
+  await Activity.insertMany([...createdLeads, ...createdDeals, ...createdContacts].map((it) => ({ workspace, board: it.board, item: it._id, type: "created", actor: userId, text: "from the sample data" })));
   await Activity.insertMany(
     createdLeads.slice(0, 3).map((l, i) => ({ workspace, board: leads._id, item: l._id, type: i === 1 ? "call" : "note", actor: userId, text: i === 1 ? "Discussed pricing, asked for a demo next week." : "Met at SaaS Summit — interested in automations.", data: i === 1 ? { direction: "outbound", outcome: "Connected", durationSec: 312 } : {} }))
   );

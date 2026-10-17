@@ -35,7 +35,7 @@ export async function getCtx(): Promise<Ctx | null> {
 /** For pages under /app: must be signed in and have a workspace. */
 export async function requireCtx(): Promise<Ctx> {
   const c = await getCtx();
-  if (!c) redirect("/login");
+  if (!c) redirect("/login?next=/app");
   if (!c.workspace.id) redirect("/onboarding");
   return c;
 }

@@ -1,21 +1,23 @@
 "use client";
-import { signIn } from "next-auth/react";
+import { signIn, signOut } from "next-auth/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api } from "@/lib/client";
 import { Logo } from "@/components/ui";
 import Orbi from "@/components/art/Orbi";
 import { Sparkles } from "@/components/art/Scenes";
 
-export default function AuthForm({ mode, google }: { mode: "login" | "register"; google: boolean }) {
+export default function AuthForm({ mode, google, stale = false }: { mode: "login" | "register"; google: boolean; stale?: boolean }) {
   const router = useRouter();
   const sp = useSearchParams();
   const next = sp.get("next") || "/app";
   const [f, setF] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState(sp.get("error") ? "Sign-in failed, try again." : "");
   const [busy, setBusy] = useState(false);
+  // Session cookie points at an account that no longer exists → clear it silently.
+  useEffect(() => { if (stale) signOut({ redirect: false }); }, [stale]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();

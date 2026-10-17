@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { CalendarDays, Code2, Kanban, MessagesSquare, Phone, Store, Table2, Workflow, ArrowRight, Check } from "lucide-react";
-import { sessionUserId } from "@/lib/auth";
+import { getCtx } from "@/lib/context";
 import { Logo } from "@/components/ui";
 import Orbi from "@/components/art/Orbi";
 import { HeroScene, Sparkles, Blob } from "@/components/art/Scenes";
@@ -19,7 +19,7 @@ const FEATURES = [
 ];
 
 export default async function Landing() {
-  if (await sessionUserId()) redirect("/app");
+  if (await getCtx()) redirect("/app");
   return (
     <div className="overflow-x-hidden">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-5">

@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import clsx from "clsx";
 import { CheckCircle2, Globe, Lock, Mail, MessageCircle, MessagesSquare, Phone, Plus, Search, Send, Smartphone, UserPlus } from "lucide-react";
 import { api } from "@/lib/client";
@@ -18,7 +18,6 @@ const CH_COLOR: Record<string, string> = { webchat: "#6161ff", email: "#579bfc",
 
 export default function Inbox({ channels, members, me, canAdmin }: { channels: Ch[]; members: Member[]; me: string; canAdmin: boolean }) {
   const toast = useToast();
-  const router = useRouter();
   const path = usePathname();
   const sp = useSearchParams();
   const [status, setStatus] = useState("open");
@@ -51,7 +50,7 @@ export default function Inbox({ channels, members, me, canAdmin }: { channels: C
   useEffect(() => { loadDetail(); const t = setInterval(loadDetail, 4000); return () => clearInterval(t); }, [loadDetail]);
   useEffect(() => { logRef.current?.scrollTo({ top: 1e9 }); }, [detail?.messages.length]);
 
-  const open = (id: string) => router.replace(`${path}?c=${id}`, { scroll: false });
+  const open = (id: string) => window.history.replaceState(null, "", `${path}?c=${id}`);
   async function send() {
     if (!text.trim() || !sel) return;
     setBusy(true);
@@ -130,7 +129,7 @@ export default function Inbox({ channels, members, me, canAdmin }: { channels: C
         <>
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex flex-wrap items-center gap-2 border-b border-border bg-surface px-4 py-2.5">
-              <button className="btn btn-ghost btn-sm md:hidden" onClick={() => router.replace(path)}>←</button>
+              <button className="btn btn-ghost btn-sm md:hidden" onClick={() => window.history.replaceState(null, "", path)} aria-label="Back to list">←</button>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{c.contact.name || c.contact.email || c.contact.phone}</p>
                 <p className="truncate text-xs text-muted">{detail.channel?.name}{c.subject ? ` · ${c.subject}` : ""}</p>

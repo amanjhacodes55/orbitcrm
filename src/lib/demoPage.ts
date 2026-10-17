@@ -10,7 +10,14 @@ button{border:0;border-radius:8px;padding:9px 12px;font:600 14px system-ui;curso
 .row{display:flex;gap:8px}.row>*{flex:1}.muted{color:#676879;font-size:12px}.big{font-size:28px;font-weight:700;letter-spacing:1px;text-align:center;margin:8px 0}
 .pad{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.pad button{background:#f5f6f8;font-size:16px;padding:10px}
 .pill{display:inline-block;padding:2px 8px;border-radius:99px;background:#eeeeff;color:#6161ff;font-size:12px;font-weight:600}
-</style></head><body><div class="wrap">${body}</div><script src="/sdk/orbit-app-sdk.js"></script><script>${script}</script></body></html>`,
+body.dark{color:#e8eaf8;background:#1c1f3a}body.dark input,body.dark select,body.dark textarea{background:#262a4a;border-color:#3a3f6a;color:#e8eaf8}
+body.dark .ghost,body.dark .pad button{background:#2b2f55;color:#e8eaf8}body.dark .muted,body.dark label{color:#a6aacb}body.dark .pill{background:#2c2f60;color:#b8b8ff}
+</style></head><body><div class="wrap">${body}</div><script>
+(function(){var q=new URLSearchParams(location.search);if(q.get('mode')==='dark')document.body.classList.add('dark');var b=q.get('brand');if(b&&/^#[0-9a-f]{3,8}$/i.test(b)){var s=document.createElement('style');s.textContent='.primary{background:'+b+'}.pill{color:'+b+'}';document.head.appendChild(s)}})();
+</script><script src="/sdk/orbit-app-sdk.js"></script><script>
+// keep the host iframe exactly as tall as the content
+if(window.ResizeObserver){new ResizeObserver(function(){Orbit.ui.resize(document.body.scrollHeight+4).catch(function(){})}).observe(document.body)}
+${script}</script></body></html>`,
     { headers: { "Content-Type": "text/html; charset=utf-8" } }
   );
 }

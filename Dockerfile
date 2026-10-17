@@ -1,14 +1,19 @@
+# ---- build ----
 FROM node:20-bookworm-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 COPY . .
+ENV STANDALONE=1 NEXT_TELEMETRY_DISABLED=1
 RUN npx next build
 
+# ---- run (standalone: only the files the server needs) ----
 FROM node:20-bookworm-slim
 WORKDIR /app
-ENV NODE_ENV=production PORT=3001
-COPY --from=build /app ./
-EXPOSE 3001
-# NEXTAUTH_URL falls back to Render's public URL when deployed there.
-CMD ["sh", "-c", "export NEXTAUTH_URL=${NEXTAUTH_URL:-$RENDER_EXTERNAL_URL}; exec npx next start -p ${PORT}"]
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=10000 HOSTNAME=0.0.0.0
+COPY --from=build /app/.next/standalone ./
+COPY --from=build /app/.next/static ./.next/static
+COPY --from=build /app/public ./public
+EXPOSE 10000
+# NEXTAUTH_URL falls back to Render's public URL.
+CMD ["sh", "-c", "export NEXTAUTH_URL=${NEXTAUTH_URL:-$RENDER_EXTERNAL_URL}; exec node server.js"]
