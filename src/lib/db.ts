@@ -7,7 +7,12 @@ const cache: Cache = g._orbitMongo ?? (g._orbitMongo = { conn: null, promise: nu
 
 export async function dbConnect() {
   if (cache.conn) return cache.conn;
-  cache.promise ??= mongoose.connect(uri, { bufferCommands: false });
-  cache.conn = await cache.promise;
+  cache.promise ??= mongoose.connect(uri, { bufferCommands: false, serverSelectionTimeoutMS: 8000 });
+  try {
+    cache.conn = await cache.promise;
+  } catch (e) {
+    cache.promise = null; // don't cache a failed connection; retry on the next request
+    throw e;
+  }
   return cache.conn;
 }

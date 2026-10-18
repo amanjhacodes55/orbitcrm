@@ -3,13 +3,19 @@ import { dbConnect } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
-/** Health check for Render / uptime monitors: 200 when the app and database respond. */
-export async function GET() {
+/**
+ * Liveness check for Render / uptime monitors: always 200 while the server is up, so a database
+ * outage doesn't block deploys. DB status is reported in the body; use ?strict=1 for a 503 when it's down.
+ */
+export async function GET(req: Request) {
+  const strict = new URL(req.url).searchParams.has("strict");
   try {
     await dbConnect();
     await mongoose.connection.db!.admin().ping();
     return Response.json({ ok: true, db: "up" });
   } catch (e) {
-    return Response.json({ ok: false, db: "down", error: e instanceof Error ? e.message : String(e) }, { status: 503 });
+    const error = e instanceof Error ? e.message : String(e);
+    console.error("[health] database unreachable:", error);
+    return Response.json({ ok: !strict, db: "down", error }, { status: strict ? 503 : 200 });
   }
 }
