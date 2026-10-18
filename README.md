@@ -216,6 +216,8 @@ Create an account and choose **"Start with a ready-to-use CRM"**.
 
 ```bash
 # Create a lead (workspace API key from Settings → API keys)
+
+[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](LICENSE)
 curl -X POST $ORBIT/api/v1/boards/$BOARD/items \
   -H "Authorization: Bearer orb_key_…" -H "Content-Type: application/json" \
   -d '{"name":"Neha Rao","values":{"Status":"New","Email":"neha@acme.io","Phone":"+91 90000 11111"}}'
@@ -330,3 +332,11 @@ public/sdk/              App SDK
 ---
 
 Built with ❤️ by [Aman Jha](https://amanjhacodes55.github.io).
+
+## License
+
+OrbitCRM is free and open-source software, licensed under the **GNU Affero General Public License v3.0 or later** ([AGPL-3.0-or-later](LICENSE)).
+
+You can use, study, share and modify it for any purpose, including commercially. If you distribute a modified version, **or run one as a service that others use over a network**, you must publish your changes under the same license so the community benefits too.
+
+Copyright © 2026 Aman Jha
