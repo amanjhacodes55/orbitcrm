@@ -1,8 +1,20 @@
 import { Schema, model, models, type Model, type InferSchemaType, Types } from "mongoose";
+import { onWorkers, registerSchema, resolveModel } from "@/lib/db";
 
 const opts = { timestamps: true } as const;
 function m<T extends Schema>(name: string, schema: T): Model<InferSchemaType<T>> {
-  return (models[name] as Model<InferSchemaType<T>>) || model(name, schema);
+  const base = (models[name] as Model<InferSchemaType<T>>) || model(name, schema);
+  registerSchema(name, schema);
+  if (!onWorkers) return base;
+  // On Workers, forward every use of the model to this request's connection (see db.ts).
+  return new Proxy(base, {
+    get(_, prop) {
+      const target = resolveModel(name);
+      const value = Reflect.get(target, prop, target);
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+    construct: (_, args) => Reflect.construct(resolveModel(name), args),
+  });
 }
 
 // ---------- identity ----------

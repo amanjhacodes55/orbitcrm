@@ -5,3 +5,7 @@ node_modules
 !.env.example
 .git
 *.md
+.open-next
+.wrangler
+.dev.vars
+.next-node

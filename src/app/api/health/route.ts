@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 import { dbConnect } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -10,8 +9,8 @@ export const dynamic = "force-dynamic";
 export async function GET(req: Request) {
   const strict = new URL(req.url).searchParams.has("strict");
   try {
-    await dbConnect();
-    await mongoose.connection.db!.admin().ping();
+    const conn = await dbConnect();
+    await conn.connection.db!.admin().ping();
     return Response.json({ ok: true, db: "up" });
   } catch (e) {
     const error = e instanceof Error ? e.message : String(e);
