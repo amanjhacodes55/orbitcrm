@@ -32,7 +32,8 @@ export default function AuthForm({ mode, google, stale = false }: { mode: "login
     }
     const res = await signIn("credentials", { email: f.email, password: f.password, redirect: false });
     setBusy(false);
-    if (!res || res.error) return setError("Wrong email or password.");
+    // next-auth reports a rejected password as "CredentialsSignin"; anything else is a server/database failure.
+    if (!res || res.error) return setError(res?.error === "CredentialsSignin" ? "Wrong email or password." : "Can't reach the database right now. Please try again in a minute.");
     router.push(next);
     router.refresh();
   }
